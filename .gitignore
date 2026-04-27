@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+.env
+.env.local
+.idea/
+.vscode/
+*.egg-info/
+dist/
+build/
+
+# Next.js (frontend/)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
