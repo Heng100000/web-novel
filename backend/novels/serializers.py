@@ -297,10 +297,12 @@ class OrderSerializer(serializers.ModelSerializer):
     payment = PaymentSerializer(read_only=True)
     invoice = InvoiceSerializer(read_only=True)
     user_email = serializers.EmailField(source='user.email', read_only=True)
+    user_phone = serializers.CharField(source='user.phone', read_only=True)
+    user_name = serializers.CharField(source='user.full_name', read_only=True)
 
     class Meta:
         model = Orders
-        fields = ["id", "user_email", "order_date", "total_amount", "status", "shipping_address", "shipping_method", "items", "payment", "invoice"]
+        fields = ["id", "user_email", "user_phone", "user_name", "order_date", "total_amount", "status", "shipping_address", "shipping_method", "items", "payment", "invoice"]
 
 class RolePermissionSerializer(serializers.ModelSerializer):
     class Meta:

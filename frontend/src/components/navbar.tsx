@@ -122,7 +122,7 @@ export default function Navbar() {
                       {link.icon}
                     </span>
                     <span>{link.name}</span>
-                    {(link.hasDropdown || link.hasCategoriesDropdown) && <ChevronDown className="size-4 opacity-50 group-hover:rotate-180 transition-transform" />}
+                    {((link as any).hasDropdown || link.hasCategoriesDropdown) && <ChevronDown className="size-4 opacity-50 group-hover:rotate-180 transition-transform" />}
                   </Link>
 
                   {/* Categories Dropdown */}
@@ -229,7 +229,7 @@ export default function Navbar() {
                       {/* Action Buttons */}
                       <div className="flex flex-col gap-2 pt-2">
                         <Link 
-                          href="/dashboard" 
+                          href="/profile" 
                           className="flex items-center justify-center gap-3 w-full py-3 rounded-lg bg-[#6b4e31] text-white hover:bg-[#5a422a] transition-colors shadow-lg shadow-[#6b4e31]/20"
                         >
                           <User className="size-5" />

@@ -310,6 +310,8 @@ class Payments(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_status = models.CharField(max_length=15, default='Pending') # Pending, Completed, Failed
     payment_date = models.DateTimeField(blank=True, null=True)
+    aba_hash = models.TextField(blank=True, null=True) # Store the hash sent to ABA
+    raw_response = models.JSONField(blank=True, null=True) # Store full response from ABA callback
 
     class Meta:
         managed = True

@@ -12,9 +12,13 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
@@ -179,3 +183,11 @@ AUTH_USER_MODEL = 'novels.Users'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# ABA PayWay Settings
+ABA_PAYWAY_MERCHANT_ID = os.environ.get("ABA_PAYWAY_MERCHANT_ID")
+ABA_PAYWAY_API_KEY = os.environ.get("ABA_PAYWAY_API_KEY")
+ABA_PAYWAY_API_URL = os.environ.get("ABA_PAYWAY_API_URL")
+ABA_PAYWAY_RSA_PUBLIC_KEY = os.environ.get("ABA_PAYWAY_RSA_PUBLIC_KEY")
+ABA_PAYWAY_RSA_PRIVATE_KEY = os.environ.get("ABA_PAYWAY_RSA_PRIVATE_KEY")
+
+# Reload trigger for settings

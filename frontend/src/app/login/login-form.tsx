@@ -116,7 +116,7 @@ export function LoginForm() {
           body: JSON.stringify({ email, password }),
         });
 
-        login(data.access, data.refresh, data.user);
+        login(data.access, data.user);
         
         const roleName = data.user.role_details?.name?.toLowerCase() || "";
         if (roleName === 'admin' || roleName === 'staff') {

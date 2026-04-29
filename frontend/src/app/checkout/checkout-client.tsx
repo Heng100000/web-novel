@@ -38,6 +38,8 @@ export default function CheckoutClient() {
   const [shippingMethod, setShippingMethod] = useState("J&T Express");
   const [paymentMethod, setPaymentMethod] = useState("ABA Bank");
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [qrImage, setQrImage] = useState<string | null>(null);
+  const [abapayDeeplink, setAbapayDeeplink] = useState<string | null>(null);
 
   // OTP State
   const [showOtpModal, setShowOtpModal] = useState(false);
@@ -145,11 +147,6 @@ export default function CheckoutClient() {
       return;
     }
 
-    if (!otpVerified) {
-      await requestOtp();
-      return;
-    }
-
     proceedWithSubmit();
   };
 
@@ -157,7 +154,7 @@ export default function CheckoutClient() {
     setLoading(true);
     setError(null);
     try {
-      await apiClient("/orders/checkout/", {
+      const orderRes: any = await apiClient("/orders/checkout/", {
         method: "POST",
         body: JSON.stringify({
           batch_id: batchId,
@@ -168,17 +165,44 @@ export default function CheckoutClient() {
         }),
       });
 
-      // Save phone and address to profile permanently
+      // Update profile info
       try {
         await apiClient("/users/me/", {
           method: "PATCH",
-          body: JSON.stringify({
-            phone: phone,
-            address: address
-          })
+          body: JSON.stringify({ phone, address })
         });
-      } catch (profileErr) {
-        console.error("Failed to update profile", profileErr);
+      } catch (pErr) { console.error(pErr); }
+
+      // If ABA Bank selected, initiate PayWay
+      if (paymentMethod === "ABA Bank") {
+        if (!orderRes || !orderRes.id) {
+          toast.error("ការបញ្ជាទិញបរាជ័យ។");
+          setLoading(false);
+          return;
+        }
+
+        try {
+          const paywayRes: any = await apiClient("/payway/initiate/", {
+            method: "POST",
+            body: JSON.stringify({ order_id: orderRes.id })
+          });
+
+          if (paywayRes && paywayRes.qrImage) {
+            setQrImage(paywayRes.qrImage);
+            setAbapayDeeplink(paywayRes.abapay_deeplink);
+            setLoading(false);
+            return; // Stop here, wait for scan
+          } else {
+            console.error("No QR Image in ABA response:", paywayRes);
+            toast.error("មិនអាចបង្កើត ABA QR Code បានទេ: " + (paywayRes.description || "កំហុសមិនស្គាល់"));
+            setLoading(false);
+            return;
+          }
+        } catch (paywayErr: any) {
+          toast.error("មិនអាចភ្ជាប់ទៅកាន់ ABA បានទេ: " + paywayErr.message);
+          setLoading(false);
+          return;
+        }
       }
 
       await refreshUser();
@@ -456,6 +480,43 @@ export default function CheckoutClient() {
                   </button>
                 )}
               </div>
+
+              {/* ABA QR Code Display */}
+              {qrImage && (
+                <div className="flex flex-col items-center gap-4 bg-white p-6 rounded-2xl border-2 border-[#005a9c]/20 shadow-xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-500 my-4">
+                  <div className="absolute top-0 right-0 left-0 h-1.5 bg-[#005a9c]" />
+                  <h4 className="text-sm font-black text-[#005a9c] uppercase tracking-wide">Scan to Pay via ABA</h4>
+                  
+                  <div className="relative size-60 rounded-xl p-2 bg-white shadow-md ring-1 ring-[#005a9c]/10">
+                    <img src={qrImage} alt="ABA KHQR" className="w-full h-full object-contain" />
+                  </div>
+
+                  {abapayDeeplink && (
+                    <a 
+                      href={abapayDeeplink}
+                      className="w-full h-11 rounded-xl bg-[#005a9c] text-white flex items-center justify-center gap-2 text-xs font-black shadow-lg shadow-[#005a9c]/20 hover:opacity-95 transition-all"
+                    >
+                      <span>បើកកម្មវិធី ABA (Pay with ABA Mobile)</span>
+                    </a>
+                  )}
+                  
+                  <p className="text-[10px] font-bold text-zinc-500 text-center leading-relaxed">
+                    * សូមថតរូបភាព QR នេះ ឬបើកកម្មវិធី ABA ដើម្បីបង់ប្រាក់
+                  </p>
+
+                  {/* សម្រាប់តែតេស្ត Sandbox ប៉ុណ្ណោះ */}
+                  <button 
+                    onClick={async () => {
+                      await refreshUser();
+                      toast.success("ការបញ្ជាទិញទទួលបានជោគជ័យ!");
+                      router.push("/dashboard/orders");
+                    }}
+                    className="mt-2 text-xs font-black text-[#3b6016] hover:opacity-80 transition-all border border-[#3b6016]/30 px-4 py-2 rounded-lg bg-[#3b6016]/5 w-full text-center"
+                  >
+                    [ តេស្តបញ្ជាទិញជោគជ័យ (Sandbox Mode) ]
+                  </button>
+                </div>
+              )}
 
               {/* Submit Button */}
               <button

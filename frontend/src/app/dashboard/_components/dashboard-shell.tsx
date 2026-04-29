@@ -10,13 +10,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     <div className="flex h-dvh bg-app-bg overflow-hidden" suppressHydrationWarning>
       <Sidebar />
       <div 
-        className={`flex flex-1 flex-col transition-all duration-300 ${
+        className={`flex flex-1 flex-col min-w-0 transition-all duration-300 ${
           isCollapsed ? "lg:pl-[68px]" : "lg:pl-[280px]"
         }`}
         suppressHydrationWarning
       >
         <Topbar />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8 min-w-0">
           <div className="space-y-4 w-full">
             <Breadcrumbs />
             {children}

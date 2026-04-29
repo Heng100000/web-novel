@@ -1,17 +1,21 @@
 import os
 import uuid
 import random
+import logging
+import json
+import datetime
+from decimal import Decimal
 from datetime import timedelta
 from django.utils import timezone
 from django.conf import settings
-from django.db import connection
+from django.db import connection, transaction, models
 from django.http import JsonResponse
-from rest_framework import viewsets, status, filters
-from rest_framework.decorators import action
+from rest_framework import viewsets, status, filters, permissions, response, views as drf_views
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import (
@@ -382,7 +386,7 @@ class AddToCartViewSet(viewsets.ModelViewSet):
         return Response(created_entries, status=status.HTTP_201_CREATED)
 
 
-class OrderViewSet(viewsets.ReadOnlyModelViewSet):
+class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [HasGranularPermission]
     resource_name = 'orders'
     serializer_class = OrderSerializer
@@ -394,6 +398,9 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
         if user_role == 'admin':
             return Orders.objects.all().order_by('-order_date')
         return Orders.objects.filter(user=self.request.user).order_by('-order_date')
+
+    def create(self, request, *args, **kwargs):
+        return self.checkout(request)
 
     @action(detail=True, methods=['post'])
     def confirm_payment(self, request, pk=None):
@@ -800,55 +807,6 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['post'], url_path='request-otp', permission_classes=[IsAuthenticated])
-    def request_otp(self, request):
-        phone = request.data.get('phone')
-        if not phone:
-            return Response({"error": "Phone number is required"}, status=400)
-
-        # Generate 6-digit code
-        code = str(random.randint(100000, 999999))
-        expiry = timezone.now() + timedelta(minutes=10)
-
-        # Save to DB
-        UserOTP.objects.create(
-            user=request.user,
-            code=code,
-            expires_at=expiry
-        )
-
-        # TODO: Integrate with real SMS API here
-        # For now, we simulate sending and log it
-        print(f"DEBUG: Sending OTP {code} to phone {phone}")
-        
-        # We can return the code in response for testing/development
-        return Response({
-            "message": "OTP sent successfully",
-            "debug_code": code if settings.DEBUG else None
-        })
-
-    @action(detail=False, methods=['post'], url_path='verify-otp', permission_classes=[IsAuthenticated])
-    def verify_otp(self, request):
-        code = request.data.get('code')
-        if not code:
-            return Response({"error": "Code is required"}, status=400)
-
-        otp_record = UserOTP.objects.filter(
-            user=request.user,
-            code=code,
-            expires_at__gt=timezone.now(),
-            is_verified=False
-        ).last()
-
-        if not otp_record:
-            return Response({"error": "Invalid or expired OTP"}, status=400)
-
-        otp_record.is_verified = True
-        otp_record.save()
-
-        return Response({"message": "OTP verified successfully"})
-
-
 class RoleViewSet(viewsets.ModelViewSet):
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
@@ -973,5 +931,107 @@ class UserCouponViewSet(viewsets.ModelViewSet):
             return Response({"message": "Successfully assigned coupons"}, status=status.HTTP_201_CREATED)
         except Coupon.DoesNotExist:
             return Response({"error": "Coupon not found"}, status=status.HTTP_404_NOT_FOUND)
+
+# --- ABA PayWay Views ---
+from .payway import PayWayService
+from rest_framework import views as drf_views
+
+class PayWayInitiateView(drf_views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        order_id = request.data.get("order_id")
+        if not order_id:
+            return Response({"error": "Order ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            order = Orders.objects.get(id=order_id, user=request.user)
+            order_items = OrderItems.objects.filter(order=order)
+            
+            items_data = []
+            for item in order_items:
+                items_data.append({
+                    'name': item.book.title,
+                    'quantity': str(item.quantity),
+                    'price': "{:.2f}".format(float(item.price_at_purchase))
+                })
+
+            if not items_data:
+                items_data.append({
+                    'name': f"Order #{order.id}",
+                    'quantity': "1",
+                    'price': str(order.total_amount)
+                })
+
+            # Calculate shipping amount (Total - Sum of items)
+            items_total = sum(float(item['price']) * int(item['quantity']) for item in items_data)
+            shipping_amount = float(order.total_amount) - items_total
+            if shipping_amount < 0:
+                shipping_amount = 0
+                
+            payment_payload = PayWayService.get_payment_data(
+                order, 
+                items_data, 
+                shipping_amount=shipping_amount
+            )
+            
+            import requests
+            
+            api_url = payment_payload.pop('api_url', None)
+            if not api_url:
+                raise Exception("API URL is missing from payment payload")
+
+            # Send S2S POST request directly to ABA PayWay
+            aba_response = requests.post(api_url, data=payment_payload)
+            aba_data = aba_response.json()
+
+            # Save transaction ID and hash to payment record
+            Payments.objects.update_or_create(
+                order=order,
+                defaults={
+                    'transaction_id': payment_payload.get('tran_id'),
+                    'amount': order.total_amount,
+                    'payment_method': 'ABA PayWay',
+                    'payment_status': 'Pending',
+                    'aba_hash': payment_payload.get('hash')
+                }
+            )
+
+            return Response(aba_data, status=status.HTTP_200_OK)
+
+        except Orders.DoesNotExist:
+            return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class PayWayCallbackView(drf_views.APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        data = request.data
+        tran_id = data.get("tran_id")
+        apaba_status = data.get("status")
+        
+        if tran_id and apaba_status == "0":
+            try:
+                payment = Payments.objects.get(transaction_id=tran_id)
+                payment.payment_status = 'Completed'
+                payment.payment_date = timezone.now()
+                payment.save()
+
+                order = payment.order
+                order.status = 'Processing'
+                order.save()
+                
+                Notification.objects.create(
+                    user=order.user,
+                    title="ការទូទាត់ជោគជ័យ",
+                    message=f"ការទូទាត់សម្រាប់កម្មង់លេខ #{order.id} ត្រូវបានទទួល។",
+                    type="success"
+                )
+
+                return Response({"status": "OK"}, status=status.HTTP_200_OK)
+            except Payments.DoesNotExist:
+                return Response({"error": "Transaction not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        return Response({"status": "Failed or Invalid"}, status=status.HTTP_400_BAD_REQUEST)

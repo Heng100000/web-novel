@@ -51,7 +51,8 @@ function NavItem({
   const isActive = href === "/dashboard"
     ? pathname === "/dashboard"
     : pathname.startsWith(href);
-  const { isCollapsed, closeMobileSidebar } = useSidebar();
+  const { isCollapsed, closeMobileSidebar, isMobile } = useSidebar();
+  const effectiveIsCollapsed = isMobile ? false : isCollapsed;
 
   return (
     <div className="relative flex items-center justify-center">
@@ -59,30 +60,30 @@ function NavItem({
         href={href}
         onClick={closeMobileSidebar}
         onMouseEnter={(e) => {
-          if (!isCollapsed) return;
+          if (!effectiveIsCollapsed) return;
           const rect = e.currentTarget.getBoundingClientRect();
           const tooltip = e.currentTarget.querySelector(".fixed-tooltip") as HTMLElement;
           if (tooltip) {
             tooltip.style.top = `${rect.top + (rect.height / 2)}px`;
           }
         }}
-        className={`relative flex items-center transition-all duration-300 group ${isCollapsed
-            ? "justify-center h-11 w-11 rounded-xl mx-auto"
-            : "w-full gap-3.5 rounded-xl px-3.5 py-2.5"
+        className={`relative flex items-center transition-all duration-300 group ${effectiveIsCollapsed
+          ? "justify-center h-11 w-11 rounded-xl mx-auto"
+          : "w-full gap-3.5 rounded-xl px-3.5 py-2.5"
           } ${isActive
             ? "bg-primary text-white font-bold shadow-lg shadow-primary/20 ring-1 ring-primary/30"
             : "text-text-dim hover:bg-primary/5 hover:text-primary dark:hover:text-emerald-500 font-bold"
           }`}
       >
         <Icon className={`size-[20px] shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? "text-white" : "text-text-dim/70 group-hover:text-primary dark:group-hover:text-emerald-500"}`} />
-        {!isCollapsed && (
+        {!effectiveIsCollapsed && (
           <span className="truncate text-[15px] font-bold tracking-tight">
             {children}
           </span>
         )}
 
         {/* Tooltip for collapsed state - Using fixed positioning and JS update to follow scroll */}
-        {isCollapsed && (
+        {effectiveIsCollapsed && (
           <div className="fixed-tooltip fixed left-[76px] -translate-y-1/2 z-[9999] hidden whitespace-nowrap rounded-lg bg-zinc-900/95 dark:bg-zinc-800/95 backdrop-blur-md px-3 py-2 text-[11px] font-black uppercase tracking-wider text-white shadow-2xl group-hover:block animate-in fade-in slide-in-from-left-2 duration-200 ring-1 ring-white/10 pointer-events-none">
             {children}
             {/* Tooltip Arrow */}
@@ -105,16 +106,17 @@ function NavGroup({
   isOpen: boolean;
   onToggle: () => void;
 }) {
-  const { isCollapsed } = useSidebar();
+  const { isCollapsed, isMobile } = useSidebar();
+  const effectiveIsCollapsed = isMobile ? false : isCollapsed;
 
   return (
-    <div className={`flex flex-col transition-all duration-300 ${isCollapsed ? "gap-2" : "gap-1"}`}>
-      {!isCollapsed && (
+    <div className={`flex flex-col transition-all duration-300 ${effectiveIsCollapsed ? "gap-2" : "gap-1"}`}>
+      {!effectiveIsCollapsed && (
         <button
           onClick={onToggle}
           className="group flex w-full items-center justify-between px-4 pb-2 pt-6 transition-all hover:opacity-80"
         >
-          <span className="text-[11px] font-black uppercase tracking-[0.15em] text-text-dim/60">
+          <span className="text-[13px] font-bold font-kantumruy text-text-dim/60">
             {title}
           </span>
           <IconChevronRight
@@ -122,20 +124,20 @@ function NavGroup({
           />
         </button>
       )}
-      {isCollapsed && <div className="mx-auto h-px w-8 bg-grayborde my-2" />}
+      {effectiveIsCollapsed && <div className="mx-auto h-px w-8 bg-grayborde my-2" />}
 
       <div
         className={`grid ${
-          isCollapsed 
+          effectiveIsCollapsed 
             ? "grid-rows-[1fr] opacity-100 mt-2" 
             : isOpen 
               ? "grid-rows-[1fr] opacity-100 mt-2 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]" 
               : "grid-rows-[0fr] opacity-0 mt-0 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
         }`}
       >
-        <div className={isCollapsed ? "" : "overflow-hidden"}>
+        <div className={effectiveIsCollapsed ? "" : "overflow-hidden"}>
           <div className={`${
-            isCollapsed 
+            effectiveIsCollapsed 
               ? "flex flex-col items-center" 
               : isOpen
                 ? "translate-y-0 opacity-100 scale-100 transition-all duration-500 ease-out transform"
@@ -153,7 +155,8 @@ function NavGroup({
 
 export function Sidebar() {
   const { user, isAdmin, logout, hasPermission } = useAuth();
-  const { isCollapsed, isMobileOpen, closeMobileSidebar } = useSidebar();
+  const { isCollapsed, isMobileOpen, closeMobileSidebar, isMobile } = useSidebar();
+  const effectiveIsCollapsed = isMobile ? false : isCollapsed;
   const pathname = usePathname();
 
   // Expanded groups state
@@ -232,38 +235,49 @@ export function Sidebar() {
   };
 
   useEffect(() => {
-    if (isMobileOpen) {
-      closeMobileSidebar();
-    }
-  }, [pathname, isMobileOpen, closeMobileSidebar]);
+    closeMobileSidebar();
+  }, [pathname, closeMobileSidebar]);
 
   return (
     <>
       {/* Backdrop for mobile */}
-      {isMobileOpen && (
-        <div
-          className="fixed inset-0 z-[100] bg-zinc-900/40 backdrop-blur-md lg:hidden"
-          onClick={closeMobileSidebar}
-        />
-      )}
+      <div
+        className={`fixed inset-0 z-[100] bg-zinc-900/40 backdrop-blur-md lg:hidden transition-all duration-300 ease-in-out ${
+          isMobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={closeMobileSidebar}
+      />
 
       <aside
-        className={`fixed inset-y-0 left-0 z-[110] flex flex-col border-r border-grayborde bg-card-bg transition-all duration-300 ease-in-out lg:translate-x-0 ${isMobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full shadow-none"
-          } ${isCollapsed ? "lg:w-[68px]" : "lg:w-[280px]"}`}
+        className={`transform fixed inset-y-0 left-0 z-[110] flex flex-col border-r border-grayborde bg-card-bg transition-all duration-300 ease-in-out lg:translate-x-0 ${isMobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full shadow-none"
+          } ${effectiveIsCollapsed ? "w-[68px]" : "w-[280px]"}`}
       >
         {/* Brand Section */}
-        <div className={`flex h-16 items-center shrink-0 border-b border-grayborde transition-all duration-300 ${isCollapsed ? "justify-center px-0" : "px-6"}`}>
+        <div className={`flex h-16 items-center shrink-0 border-b border-grayborde transition-all duration-300 ${effectiveIsCollapsed ? "justify-center px-0" : "px-6 justify-between"}`}>
           <Link href="/dashboard" className="flex items-center">
-            {isCollapsed ? (
+            {effectiveIsCollapsed ? (
               <img src="/images/logo.png" alt="Logo" className="size-10 object-contain" />
             ) : (
               <img src="/images/logo_full.png" alt="NovelAdmin" className="h-10 w-auto object-contain" />
             )}
           </Link>
+
+          {/* Close button for mobile */}
+          {!effectiveIsCollapsed && (
+            <button
+              onClick={closeMobileSidebar}
+              className="lg:hidden flex size-9 items-center justify-center rounded-xl bg-surface-3 border border-border-dim/60 text-red-500 transition-all hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 active:scale-95 shadow-sm"
+              aria-label="បិទម៉ឺនុយ"
+            >
+              <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* Search Bar Section */}
-        {!isCollapsed && (
+        {!effectiveIsCollapsed && (
           <div className="px-4 pt-4">
             <div className="relative group">
               <div className="flex h-10 w-full items-center overflow-hidden rounded-xl border border-border-dim/50 bg-bg-soft/30 transition-all focus-within:border-primary shadow-sm">
@@ -293,7 +307,7 @@ export function Sidebar() {
         )}
 
         {/* Navigation Content */}
-        <nav className={`flex-1 pt-6 pb-6 overflow-y-auto scrollbar-sidebar transition-all duration-300 flex flex-col ${isCollapsed ? "pl-[4px] px-0 space-y-6 items-center" : "px-3 space-y-1"}`}>
+        <nav className={`flex-1 pt-6 pb-6 overflow-y-auto scrollbar-sidebar transition-all duration-300 flex flex-col ${effectiveIsCollapsed ? "pl-[4px] px-0 space-y-6 items-center" : "px-3 space-y-1"}`}>
           {showDashboard && <div className="px-1"><NavItem href="/dashboard" icon={IconDashboard}>ផ្ទាំងគ្រប់គ្រង</NavItem></div>}
 
           {filteredGroups.map(group => (
@@ -303,7 +317,7 @@ export function Sidebar() {
               isOpen={expanded[group.id] || searchQuery !== ""}
               onToggle={() => toggleGroup(group.id)}
             >
-              <div className={isCollapsed ? "" : "px-1"}>
+              <div className={effectiveIsCollapsed ? "" : "px-1"}>
                 {group.items.map(item => (
                   <NavItem key={item.href} href={item.href} icon={item.icon}>{item.label}</NavItem>
                 ))}
@@ -315,7 +329,7 @@ export function Sidebar() {
         {/* Bottom Section: Integrated Profile & Actions */}
         <div className="p-4 border-t border-grayborde bg-bg-soft/30">
           <div className="flex flex-col gap-1">
-            {!isCollapsed ? (
+            {!effectiveIsCollapsed ? (
               <div className="mb-2 px-3 py-3 flex items-center gap-3 rounded-xl hover:bg-bg-soft transition-colors group cursor-default">
                 <div className="size-10 rounded-xl bg-primary flex items-center justify-center text-sm font-black text-white shadow-lg shadow-primary/20">
                   {getInitials(user?.full_name || "")}
@@ -338,13 +352,13 @@ export function Sidebar() {
 
             <button
               onClick={logout}
-              className={`flex items-center transition-all duration-300 group ${isCollapsed
-                  ? "justify-center h-11 w-11 mx-auto rounded-xl"
-                  : "w-full gap-3.5 rounded-xl px-3.5 py-2.5"
+              className={`flex items-center transition-all duration-300 group ${effectiveIsCollapsed
+                ? "justify-center h-11 w-11 mx-auto rounded-xl"
+                : "w-full gap-3.5 rounded-xl px-3.5 py-2.5"
                 } text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-red-700 active:scale-95`}
             >
               <IconLogout className="size-5 shrink-0" />
-              {!isCollapsed && <span className="text-[15px] font-bold">ចាកចេញ</span>}
+              {!effectiveIsCollapsed && <span className="text-[15px] font-bold">ចាកចេញ</span>}
             </button>
           </div>
         </div>
@@ -481,8 +495,8 @@ export function Topbar() {
             <button
               onClick={() => setIsNotificationOpen(!isNotificationOpen)}
               className={`relative flex size-10 items-center justify-center rounded-xl transition-all duration-200 active:scale-95 group ${isNotificationOpen
-                  ? "bg-primary text-white shadow-md"
-                  : "bg-surface-1 dark:bg-zinc-900 border border-border-dim/60 text-text-dim hover:text-primary dark:text-zinc-400 dark:hover:text-emerald-500 hover:border-primary/40 active:scale-95 shadow-sm"
+                ? "bg-primary text-white shadow-md"
+                : "bg-surface-1 dark:bg-zinc-900 border border-border-dim/60 text-text-dim hover:text-primary dark:text-zinc-400 dark:hover:text-emerald-500 hover:border-primary/40 active:scale-95 shadow-sm"
                 }`}
             >
               <IconBell className={`size-5 transition-transform duration-300 ${isNotificationOpen ? "scale-110" : "group-hover:scale-110"}`} />

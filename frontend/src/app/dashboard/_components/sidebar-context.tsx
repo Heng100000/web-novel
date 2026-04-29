@@ -8,6 +8,7 @@ interface SidebarContextType {
   isMobileOpen: boolean;
   toggleMobileSidebar: () => void;
   closeMobileSidebar: () => void;
+  isMobile: boolean;
 }
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
@@ -15,6 +16,16 @@ const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 export function SidebarProvider({ children }: { children: ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Load state from localStorage on mount
   useEffect(() => {
@@ -41,12 +52,13 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <SidebarContext.Provider value={{ 
-      isCollapsed, 
-      toggleSidebar, 
-      isMobileOpen, 
-      toggleMobileSidebar, 
-      closeMobileSidebar 
+    <SidebarContext.Provider value={{
+      isCollapsed,
+      toggleSidebar,
+      isMobileOpen,
+      toggleMobileSidebar,
+      closeMobileSidebar,
+      isMobile
     }}>
       {children}
     </SidebarContext.Provider>

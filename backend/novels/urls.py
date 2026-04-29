@@ -23,5 +23,7 @@ urlpatterns = [
     path("auth/login/", views.LoginView.as_view(), name="login"),
     path("auth/register/", views.RegisterView.as_view(), name="register"),
     path("auth/logout/", views.LogoutView.as_view(), name="logout"),
+    path("payway/initiate/", views.PayWayInitiateView.as_view(), name="payway-initiate"),
+    path("payway/callback/", views.PayWayCallbackView.as_view(), name="payway-callback"),
     *router.urls,
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

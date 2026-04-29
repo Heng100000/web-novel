@@ -13,6 +13,7 @@ interface Permission {
 }
 
 interface RoleDetails {
+  id?: number;
   name: string;
   name_km: string;
 }
@@ -23,6 +24,7 @@ interface User {
   full_name: string;
   phone?: string;
   address?: string;
+  profile_image?: string;
   reward_points: number;
   role: number | null;
   role_details: RoleDetails | null;
@@ -87,14 +89,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const isAdmin = user?.role === 1 || 
+  const isAdmin = !!(user?.role === 1 || 
                   user?.role_details?.id === 1 ||
                   user?.role_details?.name?.toLowerCase() === 'admin' || 
                   user?.role_details?.name === 'អ្នកគ្រប់គ្រង' || 
                   user?.role_details?.name_km === 'អ្នកគ្រប់គ្រង' || 
                   user?.role_details?.name?.toLowerCase() === 'administrator' ||
                   user?.email === 'admin@example.com' ||
-                  user?.full_name?.includes('អ្នកគ្រប់គ្រង');
+                  user?.full_name?.includes('អ្នកគ្រប់គ្រង'));
 
   useEffect(() => {
     if (user) {

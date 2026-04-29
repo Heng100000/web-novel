@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
-import { IconTruck, IconCreditCard, IconCheck, IconBooks, IconTrash, IconPlus, IconPen } from "../dashboard-icons";
+import { IconTruck, IconCreditCard, IconCheck, IconBooks, IconTrash, IconPlus, IconPen, IconOrders, IconUser, IconMapPin } from "../dashboard-icons";
 
 interface CheckoutModalProps {
   batchId: string;
@@ -25,6 +25,8 @@ export function CheckoutModal({ batchId, items, total, onSuccess, onCancel }: Ch
   const [coupons, setCoupons] = useState<any[]>([]);
   const [selectedCoupon, setSelectedCoupon] = useState<any>(null);
   const [percentageToUse, setPercentageToUse] = useState<number>(0);
+  const [qrImage, setQrImage] = useState<string | null>(null);
+  const [abapayDeeplink, setAbapayDeeplink] = useState<string | null>(null);
 
   // Constants for shipping prices
   const shippingPrices: Record<string, number> = {
@@ -69,7 +71,7 @@ export function CheckoutModal({ batchId, items, total, onSuccess, onCancel }: Ch
     setLoading(true);
     setError(null);
     try {
-      await apiClient("/orders/checkout/", {
+      const res: any = await apiClient("/orders/checkout/", {
         method: "POST",
         body: JSON.stringify({
           batch_id: batchId,
@@ -82,6 +84,40 @@ export function CheckoutModal({ batchId, items, total, onSuccess, onCancel }: Ch
           notes: notes,
         }),
       });
+
+      // Handle ABA PayWay (S2S QR Display)
+      if (paymentMethod === "ABA Bank") {
+        if (!res || !res.id) {
+          setError("ការបញ្ជាទិញបរាជ័យ។");
+          setLoading(false);
+          return;
+        }
+
+        try {
+          const paywayPayload: any = await apiClient("/payway/initiate/", {
+            method: "POST",
+            body: JSON.stringify({ order_id: res.id }),
+          });
+
+          if (paywayPayload && paywayPayload.qrImage) {
+            setQrImage(paywayPayload.qrImage);
+            setAbapayDeeplink(paywayPayload.abapay_deeplink);
+            setLoading(false);
+            return; // Wait for user to scan
+          } else {
+            console.error("No QR Image in ABA response:", paywayPayload);
+            setError("មិនអាចបង្កើត ABA QR Code បានទេ: " + (paywayPayload.description || "កំហុសមិនស្គាល់"));
+            setLoading(false);
+            return;
+          }
+        } catch (abaErr: any) {
+          console.error("Failed to initiate ABA PayWay:", abaErr);
+          setError("មិនអាចចាប់ផ្តើមការបង់ប្រាក់ ABA បានឡើយ: " + abaErr.message);
+          setLoading(false);
+          return;
+        }
+      }
+
       await refreshUser(); // Update reward points and profile info
       onSuccess();
     } catch (err: any) {
@@ -278,6 +314,42 @@ export function CheckoutModal({ batchId, items, total, onSuccess, onCancel }: Ch
             {paymentMethod === "ABA Bank" && <IconCheck className="size-4 text-green-600" />}
           </button>
         </div>
+
+        {/* ABA QR Code Display */}
+        {qrImage && (
+          <div className="flex flex-col items-center gap-4 bg-white p-6 rounded-2xl border-2 border-[#005a9c]/20 shadow-xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-500 my-4">
+            <div className="absolute top-0 right-0 left-0 h-1.5 bg-[#005a9c]" />
+            <h4 className="text-sm font-black text-[#005a9c] uppercase tracking-wide">Scan to Pay via ABA</h4>
+            
+            <div className="relative size-60 rounded-xl p-2 bg-white shadow-md ring-1 ring-[#005a9c]/10">
+              <img src={qrImage} alt="ABA KHQR" className="w-full h-full object-contain" />
+            </div>
+
+            {abapayDeeplink && (
+              <a 
+                href={abapayDeeplink}
+                className="w-full h-11 rounded-xl bg-[#005a9c] text-white flex items-center justify-center gap-2 text-xs font-black shadow-lg shadow-[#005a9c]/20 hover:opacity-95 transition-all"
+              >
+                <span>បើកកម្មវិធី ABA (Pay with ABA Mobile)</span>
+              </a>
+            )}
+            
+            <p className="text-[10px] font-bold text-[#61452e]/60 text-center leading-relaxed">
+              * សូមថតរូបភាព QR នេះ ឬបើកកម្មវិធី ABA ដើម្បីបង់ប្រាក់
+            </p>
+
+            {/* សម្រាប់តែតេស្ត Sandbox ប៉ុណ្ណោះ */}
+            <button 
+              onClick={async () => {
+                await refreshUser();
+                onSuccess();
+              }}
+              className="mt-2 text-xs font-black text-emerald-600 hover:opacity-80 transition-all border border-emerald-600/30 px-4 py-2 rounded-lg bg-emerald-50 w-full text-center"
+            >
+              [ តេស្តបញ្ជាទិញជោគជ័យ (Sandbox Mode) ]
+            </button>
+          </div>
+        )}
 
         {/* Submit Button */}
         <button
