@@ -89,21 +89,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'book_project',
-        'USER': 'root',
-        'PASSWORD': 'Heng$1234$',
-        'HOST': '127.0.0.1',
+        'NAME': 'book_db',
+        'USER': 'admin_novel',
+        'PASSWORD': 'Heng$$1234$$',
+        'HOST': 'database-1.c3qoc0ocktbm.ap-southeast-1.rds.amazonaws.com',
         'PORT': '3306',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

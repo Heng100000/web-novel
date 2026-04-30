@@ -1,4 +1,8 @@
-const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api").replace(/\/$/, '') + "/";
+const PRIMARY_API_URL = (process.env.NEXT_PUBLIC_API_URL || "https://api.our-novel.com/api").replace(/\/$/, '') + "/";
+const FALLBACK_API_URL = "http://localhost:8000/api/";
+
+// We will use this as the active base URL, and switch it if primary fails.
+let currentApiUrl = PRIMARY_API_URL;
 
 /**
  * Custom error class to handle API validation errors and details.
@@ -11,35 +15,7 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Generic API client for the entire application.
- * Normalizes URL paths and handles authentication.
- */
-export async function apiClient<T>(
-  endpoint: string,
-  config: RequestInit = {}
-): Promise<T> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-  
-  // Ensure exactly one slash between BASE_URL and endpoint
-  const cleanEndpoint = endpoint.replace(/^\//, '');
-  const url = `${BASE_URL}${cleanEndpoint}`;
-
-  const headers: HeadersInit = {
-    ...(config.headers || {}),
-  };
-
-  // Automatically set Content-Type to application/json if body is present and not FormData
-  if (config.body && !(config.body instanceof FormData)) {
-    (headers as any)["Content-Type"] = "application/json";
-  }
-
-  if (token) {
-    (headers as any)["Authorization"] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(url, { ...config, headers });
-
+async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     if (response.status === 401 && typeof window !== "undefined") {
       // Clear auth data and redirect to login on 401 Unauthorized
@@ -57,6 +33,60 @@ export async function apiClient<T>(
   }
 
   return response.json();
+}
+
+/**
+ * Generic API client for the entire application.
+ * Normalizes URL paths, handles authentication, and supports a local fallback.
+ */
+export async function apiClient<T>(
+  endpoint: string,
+  config: RequestInit = {}
+): Promise<T> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  
+  const cleanEndpoint = endpoint.replace(/^\//, '');
+  let url = `${currentApiUrl}${cleanEndpoint}`;
+
+  const headers: HeadersInit = {
+    ...(config.headers || {}),
+  };
+
+  // Automatically set Content-Type to application/json if body is present and not FormData
+  if (config.body && !(config.body instanceof FormData)) {
+    (headers as any)["Content-Type"] = "application/json";
+  }
+
+  if (token) {
+    (headers as any)["Authorization"] = `Bearer ${token}`;
+  }
+
+  try {
+    const response = await fetch(url, { ...config, headers });
+    // If server is explicitly down with gateway errors, we might want to fallback too
+    if (!response.ok && [502, 503, 504].includes(response.status)) {
+        throw new Error(`Server returned ${response.status}`);
+    }
+    return await handleResponse<T>(response);
+  } catch (error: any) {
+    // If it's an ApiError (like 400 or 404), it's a successful connection but bad request, so we don't fallback.
+    if (error instanceof ApiError) {
+      throw error;
+    }
+
+    // Network error or 50x server error: try fallback if we are on primary
+    if (currentApiUrl === PRIMARY_API_URL && PRIMARY_API_URL !== FALLBACK_API_URL) {
+      console.warn(`Connection to primary API (${PRIMARY_API_URL}) failed. Falling back to local (${FALLBACK_API_URL})...`);
+      currentApiUrl = FALLBACK_API_URL;
+      
+      // Retry with fallback URL
+      url = `${currentApiUrl}${cleanEndpoint}`;
+      const fallbackResponse = await fetch(url, { ...config, headers });
+      return await handleResponse<T>(fallbackResponse);
+    }
+    
+    throw error;
+  }
 }
 
 /**
@@ -102,8 +132,10 @@ export const orderApi = {
 export function getMediaUrl(path?: string) {
   if (!path) return "";
   if (path.startsWith("http")) return path;
-  const BACKEND_DOMAIN = "http://localhost:8000";
+  
+  // Extract domain from the currently active API URL (removes /api/ from the end)
+  const currentDomain = currentApiUrl.replace(/\/api\/?$/, '');
   const cleanPath = path.replace(/^\//, '');
-  return `${BACKEND_DOMAIN}/${cleanPath}`;
+  return `${currentDomain}/${cleanPath}`;
 }
 
