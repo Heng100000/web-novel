@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { apiClient } from "@/lib/api-client";
+import { apiClient, getMediaUrl } from "@/lib/api-client";
 import Image from "next/image";
 import Link from "next/link";
 import { Loader2, Tag } from "lucide-react";
@@ -51,7 +51,7 @@ export default function DiscountsPage() {
             >
               <div className="relative aspect-[2/3] rounded-2xl overflow-hidden bg-zinc-100 mb-3 shadow-sm group-hover:shadow-xl group-hover:-translate-y-1 transition-all duration-300">
                 <Image
-                  src={book.cover_image || "/images/placeholder_character.png"}
+                  src={getMediaUrl(book.image_url)}
                   alt={book.title}
                   fill
                   className="object-cover"

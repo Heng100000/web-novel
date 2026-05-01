@@ -109,7 +109,7 @@ export function getMediaUrl(path?: string) {
   if (!path) return "/images/placeholder_character.png";
   if (path.startsWith("http")) return path;
   
-  // Ensure we have a clean base URL without trailing slashes or /api suffix
+  // Ensure we have a clean base URL without trailing slashes
   let baseUrl = "https://api.our-novel.com";
 
   if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) {
@@ -119,12 +119,16 @@ export function getMediaUrl(path?: string) {
     }
   }
 
-  const cleanPath = path.replace(/^\//, '');
   // Make sure baseUrl always starts with http if it's not already there
   if (!baseUrl.startsWith("http")) {
     baseUrl = `https://${baseUrl}`;
   }
+
+  const cleanPath = path.replace(/^\//, '');
   
-  return `${baseUrl}/${cleanPath}`;
+  // CRITICAL: If the path doesn't already start with 'media/', prepend it
+  const finalPath = cleanPath.startsWith('media/') ? cleanPath : `media/${cleanPath}`;
+  
+  return `${baseUrl}/${finalPath}`;
 }
 
