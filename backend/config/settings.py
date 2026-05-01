@@ -197,8 +197,6 @@ AUTH_USER_MODEL = 'novels.Users'
 # AWS S3 Settings
 AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
 
-print(f"--- DEBUG: AWS_STORAGE_BUCKET_NAME = {AWS_STORAGE_BUCKET_NAME} ---")
-
 if AWS_STORAGE_BUCKET_NAME:
     # Use S3 for media files
     if 'storages' not in INSTALLED_APPS:
