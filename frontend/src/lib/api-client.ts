@@ -107,18 +107,21 @@ export const orderApi = {
 
 export function getMediaUrl(path: string | null | undefined): string {
   if (!path) return "/images/placeholder_book.png";
+  
+  // If it's already a full URL (from S3 or elsewhere), use it directly
   if (path.startsWith("http")) return path;
   
   const cleanPath = path.replace(/^\//, '');
-  const finalPath = cleanPath.startsWith('media/') ? cleanPath : `media/${cleanPath}`;
-
+  
   // Priority 1: Check if S3 is configured in environment
   const s3Bucket = process.env.NEXT_PUBLIC_S3_BUCKET;
   if (s3Bucket) {
+    // If the path already includes 'media/', don't add it again
+    const finalPath = cleanPath.startsWith('media/') ? cleanPath : cleanPath;
     return `https://${s3Bucket}.s3.amazonaws.com/${finalPath}`;
   }
 
-  // Priority 2: Use API Server URL
+  // Priority 2: Use API Server URL with 'media/' prefix for local files
   let baseUrl = "https://api.our-novel.com";
   if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) {
     const envUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -131,5 +134,6 @@ export function getMediaUrl(path: string | null | undefined): string {
     baseUrl = `https://${baseUrl}`;
   }
   
+  const finalPath = cleanPath.startsWith('media/') ? cleanPath : `media/${cleanPath}`;
   return `${baseUrl}/${finalPath}`;
 }
