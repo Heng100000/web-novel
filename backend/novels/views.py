@@ -261,16 +261,19 @@ class AuthorViewSet(viewsets.ModelViewSet):
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
         
-        # 1. Update text data
+        # 1. Update text data (Remove photo_url from data to avoid validation issues)
         data = request.data.copy()
+        if 'photo_url' in data:
+            del data['photo_url']
+            
         serializer = self.get_serializer(instance, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
         # 2. Handle Photo update
-        photo_file = request.FILES.get('photo')
+        # Check both 'photo' and 'photo_url' keys from FILES
+        photo_file = request.FILES.get('photo') or request.FILES.get('photo_url')
         if photo_file:
-            # Assigning the file directly to the ImageField triggers S3 upload
             instance.photo_url = photo_file
             instance.save()
 
