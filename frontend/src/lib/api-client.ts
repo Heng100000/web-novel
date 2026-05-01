@@ -105,13 +105,21 @@ export const orderApi = {
     }),
 };
 
-export function getMediaUrl(path?: string) {
-  if (!path) return "/images/placeholder_character.png";
+export function getMediaUrl(path: string | null): string {
+  if (!path) return "/images/placeholder_book.png";
   if (path.startsWith("http")) return path;
   
-  // Ensure we have a clean base URL without trailing slashes
-  let baseUrl = "https://api.our-novel.com";
+  const cleanPath = path.replace(/^\//, '');
+  const finalPath = cleanPath.startsWith('media/') ? cleanPath : `media/${cleanPath}`;
 
+  // Priority 1: Check if S3 is configured in environment
+  const s3Bucket = process.env.NEXT_PUBLIC_S3_BUCKET;
+  if (s3Bucket) {
+    return `https://${s3Bucket}.s3.amazonaws.com/${finalPath}`;
+  }
+
+  // Priority 2: Use API Server URL
+  let baseUrl = "https://api.our-novel.com";
   if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) {
     const envUrl = process.env.NEXT_PUBLIC_API_URL;
     if (envUrl.includes("localhost") || envUrl.includes("127.0.0.1")) {
@@ -119,15 +127,9 @@ export function getMediaUrl(path?: string) {
     }
   }
 
-  // Make sure baseUrl always starts with http if it's not already there
   if (!baseUrl.startsWith("http")) {
     baseUrl = `https://${baseUrl}`;
   }
-
-  const cleanPath = path.replace(/^\//, '');
-  
-  // CRITICAL: If the path doesn't already start with 'media/', prepend it
-  const finalPath = cleanPath.startsWith('media/') ? cleanPath : `media/${cleanPath}`;
   
   return `${baseUrl}/${finalPath}`;
 }
