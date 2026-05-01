@@ -115,7 +115,7 @@ class Events(models.Model):
     end_date = models.DateTimeField()
     show_in_banner = models.IntegerField(blank=True, null=True)
     show_in_homepage = models.IntegerField(blank=True, null=True)
-    banner_url = models.CharField(max_length=255, blank=True, null=True)
+    banner_url = models.ImageField(upload_to='events/', blank=True, null=True)
     status = models.CharField(max_length=8, blank=True, null=True)
     created_at = models.DateTimeField(blank=True, null=True)
 
