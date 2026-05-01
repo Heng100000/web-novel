@@ -106,12 +106,19 @@ export const orderApi = {
 };
 
 export function getMediaUrl(path?: string) {
-  if (!path) return "";
+  if (!path) return "/images/placeholder_character.png";
   if (path.startsWith("http")) return path;
   
-  // Extract domain from the currently active API URL (removes /api/ from the end)
-  const currentDomain = API_URL.replace(/\/api\/?$/, '');
+  // Hardcoded production fallback if environment variable is missing or wrong
+  const defaultApiUrl = "https://api.our-novel.com";
+  let baseUrl = defaultApiUrl;
+
+  if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) {
+    // If it's http://localhost:8000/api -> http://localhost:8000
+    baseUrl = process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, '');
+  }
+
   const cleanPath = path.replace(/^\//, '');
-  return `${currentDomain}/${cleanPath}`;
+  return `${baseUrl}/${cleanPath}`;
 }
 
