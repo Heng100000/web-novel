@@ -51,7 +51,7 @@ class Authors(models.Model):
     name = models.CharField(max_length=150)
     name_km = models.CharField(max_length=150, blank=True, null=True)
     biography = models.TextField(blank=True, null=True)
-    photo_url = models.CharField(max_length=255, blank=True, null=True)
+    photo_url = models.ImageField(upload_to='authors/', blank=True, null=True)
 
     class Meta:
         managed = False
@@ -98,7 +98,7 @@ class Books(models.Model):
 
 class BookImages(models.Model):
     book = models.ForeignKey(Books, models.DO_NOTHING, blank=True, null=True)
-    image_url = models.CharField(max_length=255)
+    image_url = models.ImageField(upload_to='books/')
     is_main = models.IntegerField(blank=True, null=True)
 
     class Meta:
