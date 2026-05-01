@@ -3,38 +3,59 @@ import { Metadata } from "next";
 import { decodeId } from "@/lib/id-obfuscator";
 
 async function getBookData(encodedId: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.our-novel.com/api";
-  
   // Try to decode if it's not a direct number
   const decodedId = decodeId(encodedId) || encodedId;
   
-  try {
-    const res = await fetch(`${baseUrl}/books/${decodedId}/`, { 
-      next: { revalidate: 60 },
-      headers: { 'Accept': 'application/json' }
-    });
-    if (!res.ok) return null;
-    return res.json();
-  } catch (error) {
-    console.error("Error fetching book:", error);
-    return null;
+  // List of possible API URLs to try (Public first, then Internal fallback)
+  const urlsToTry = [
+    process.env.NEXT_PUBLIC_API_URL || "https://api.our-novel.com/api",
+    "http://127.0.0.1:8000/api"
+  ];
+
+  for (const baseUrl of urlsToTry) {
+    try {
+      const fullUrl = `${baseUrl.replace(/\/$/, '')}/books/${decodedId}/`;
+      const res = await fetch(fullUrl, { 
+        next: { revalidate: 60 },
+        headers: { 'Accept': 'application/json' }
+      });
+      
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (error) {
+      console.error(`Failed to fetch from ${baseUrl}:`, error);
+    }
   }
+  
+  return null;
 }
 
 async function getSimilarBooks(categoryId: number, currentBookId: number) {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.our-novel.com/api";
-  
-  try {
-    const res = await fetch(`${baseUrl}/books/?category=${categoryId}&limit=5`, { next: { revalidate: 60 } });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const results = Array.isArray(data) ? data : data.results || [];
-    // Filter out the current book
-    return results.filter((b: any) => b.id !== currentBookId);
-  } catch (error) {
-    console.error("Error fetching similar books:", error);
-    return [];
+  const urlsToTry = [
+    process.env.NEXT_PUBLIC_API_URL || "https://api.our-novel.com/api",
+    "http://127.0.0.1:8000/api"
+  ];
+
+  for (const baseUrl of urlsToTry) {
+    try {
+      const fullUrl = `${baseUrl.replace(/\/$/, '')}/books/?category=${categoryId}&limit=5`;
+      const res = await fetch(fullUrl, { 
+        next: { revalidate: 60 },
+        headers: { 'Accept': 'application/json' }
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        const results = Array.isArray(data) ? data : data.results || [];
+        return results.filter((b: any) => b.id !== currentBookId);
+      }
+    } catch (error) {
+      console.error(`Failed to fetch similar books from ${baseUrl}:`, error);
+    }
   }
+  
+  return [];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
