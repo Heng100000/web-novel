@@ -185,7 +185,7 @@ export default function Navbar() {
                 <SearchIcon className="size-6" />
               </button>
               <button className="p-2 flex items-center justify-center">
-                <Image src="/images/kh-flag.png" alt="KH" width={22} height={16} className="rounded-sm shadow-sm" />
+                <span className="text-[12px] font-black text-[#3b6016] border border-[#3b6016]/20 px-1.5 py-0.5 rounded bg-zinc-50">KH</span>
               </button>
               <Link href="/wishlist" className="p-2 text-zinc-600 hover:text-[#3b6016] transition-colors relative">
                 <Heart className="size-6" />
@@ -259,7 +259,7 @@ export default function Navbar() {
             {/* Mobile Actions */}
             <div className="flex md:hidden items-center gap-2">
               <button className="p-1">
-                <Image src="/images/kh-flag.png" alt="KH" width={24} height={18} className="rounded-sm" />
+                <span className="text-[10px] font-black text-[#3b6016] border border-[#3b6016]/20 px-1 py-0.5 rounded bg-zinc-50">KH</span>
               </button>
               <button 
                 onClick={() => setIsCartOpen(true)}
