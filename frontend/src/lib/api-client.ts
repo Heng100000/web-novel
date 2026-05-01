@@ -105,7 +105,7 @@ export const orderApi = {
     }),
 };
 
-export function getMediaUrl(path: string | null): string {
+export function getMediaUrl(path: string | null | undefined): string {
   if (!path) return "/images/placeholder_book.png";
   if (path.startsWith("http")) return path;
   
