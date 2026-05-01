@@ -20,7 +20,7 @@ export default function HomeBanner() {
             >
               <div className="absolute inset-0 bg-white/10 rounded-full blur-2xl md:blur-3xl" />
               <img
-                src="/images/picbanner.png"
+                src="/images/cat.png"
                 alt="Character"
                 className="w-full h-full object-contain relative z-10 drop-shadow-xl md:drop-shadow-2xl"
                 onError={(e: any) => {
