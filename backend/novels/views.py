@@ -164,26 +164,12 @@ class BookViewSet(viewsets.ModelViewSet):
             main_image_idx = int(request.data.get('main_image_idx', 0))
 
             if images:
-                # Ensure directory exists
-                upload_dir = os.path.join(settings.MEDIA_ROOT, 'books')
-                os.makedirs(upload_dir, exist_ok=True)
-
                 for idx, image_file in enumerate(images):
-                    # Generate unique filename
-                    ext = os.path.splitext(image_file.name)[1]
-                    filename = f"{uuid.uuid4()}{ext}"
-                    file_path = os.path.join(upload_dir, filename)
-
-                    # Save physical file
-                    with open(file_path, 'wb+') as destination:
-                        for chunk in image_file.chunks():
-                            destination.write(chunk)
-
-                    # Save record in database
-                    image_url = f"{settings.MEDIA_URL}books/{filename}"
+                    # Simply create the record and assign the file object.
+                    # Django's ImageField will handle the S3 upload automatically.
                     BookImages.objects.create(
                         book=book,
-                        image_url=image_url,
+                        image_url=image_file,
                         is_main=1 if idx == main_image_idx else 0
                     )
 
@@ -213,22 +199,11 @@ class BookViewSet(viewsets.ModelViewSet):
         # 2. Add New Images (optional during edit)
         images = request.FILES.getlist('images')
         if images:
-            upload_dir = os.path.join(settings.MEDIA_ROOT, 'books')
-            os.makedirs(upload_dir, exist_ok=True)
-
             for image_file in images:
-                ext = os.path.splitext(image_file.name)[1]
-                filename = f"{uuid.uuid4()}{ext}"
-                file_path = os.path.join(upload_dir, filename)
-
-                with open(file_path, 'wb+') as destination:
-                    for chunk in image_file.chunks():
-                        destination.write(chunk)
-
-                image_url = f"{settings.MEDIA_URL}books/{filename}"
+                # Assign the file object directly for automatic S3 upload
                 BookImages.objects.create(
                     book=instance,
-                    image_url=image_url,
+                    image_url=image_file,
                     is_main=0 # Default to 0 for new non-primary images
                 )
 
@@ -277,22 +252,8 @@ class AuthorViewSet(viewsets.ModelViewSet):
         # 3. Handle Photo
         photo_file = request.FILES.get('photo')
         if photo_file:
-            # Ensure directory exists
-            upload_dir = os.path.join(settings.MEDIA_ROOT, 'authors')
-            os.makedirs(upload_dir, exist_ok=True)
-
-            # Generate unique filename
-            ext = os.path.splitext(photo_file.name)[1]
-            filename = f"{uuid.uuid4()}{ext}"
-            file_path = os.path.join(upload_dir, filename)
-
-            # Save physical file
-            with open(file_path, 'wb+') as destination:
-                for chunk in photo_file.chunks():
-                    destination.write(chunk)
-
-            # Update database record
-            author.photo_url = f"{settings.MEDIA_URL}authors/{filename}"
+            # Assign the file object directly to trigger S3 storage upload
+            author.photo_url = photo_file
             author.save()
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
