@@ -33,15 +33,26 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() in ("1", "true", "yes")
 
+# កែសម្រួលកន្លែងនេះ ដើម្បីឱ្យ API ស្គាល់ Domain ខ្លួនឯង
 ALLOWED_HOSTS = [
-    h.strip()
-    for h in os.environ.get(
-        "DJANGO_ALLOWED_HOSTS",
-        "localhost,127.0.0.1",
-    ).split(",")
-    if h.strip()
+    'api.our-novel.com', 
+    'our-novel.com', 
+    'www.our-novel.com', 
+    '127.0.0.1', 
+    'localhost'
 ]
 
+# CORS: សំខាន់ណាស់ ដើម្បីឱ្យ Next.js អាចទាញទិន្នន័យពី API បាន
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://our-novel.com")
+CORS_ALLOWED_ORIGINS = [
+    "https://our-novel.com",
+    "https://www.our-novel.com",
+    "http://localhost:3000", # សម្រាប់តេស្ត Local
+]
+# បើចង់ឱ្យ Mobile App ប្រើដែរ ត្រូវថែម settings នេះ
+CORS_ALLOW_METHODS = [
+    "DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT",
+]
 
 # Application definition
 
@@ -97,9 +108,14 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'book_db',
         'USER': 'admin_novel',
-        'PASSWORD': 'Heng$$1234$$',
+        'PASSWORD': 'novel$$1234$$',
         'HOST': 'database-1.c3qoc0ocktbm.ap-southeast-1.rds.amazonaws.com',
         'PORT': '3306',
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset': 'utf8mb4', # គាំទ្រអក្សរខ្មែរ និង Emoji បានល្អ
+        },
+        'CONN_MAX_AGE': 600,
     }
 }
 
@@ -143,7 +159,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -189,3 +205,11 @@ ABA_PAYWAY_RSA_PUBLIC_KEY = os.environ.get("ABA_PAYWAY_RSA_PUBLIC_KEY")
 ABA_PAYWAY_RSA_PRIVATE_KEY = os.environ.get("ABA_PAYWAY_RSA_PRIVATE_KEY")
 
 # Reload trigger for settings
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000 # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True

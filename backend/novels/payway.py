@@ -56,8 +56,9 @@ class PayWayService:
         payment_option = "abapay"
         
         # Default URLs
-        return_url = return_url or "http://localhost:3000/payment-status"
-        continue_success_url = continue_success_url or "http://localhost:3000/dashboard"
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'https://our-novel.com')
+        return_url = return_url or f"{frontend_url}/payment-status"
+        continue_success_url = continue_success_url or f"{frontend_url}/dashboard"
         return_url_base64 = base64.b64encode(return_url.encode('utf-8')).decode('utf-8')
         continue_success_url_base64 = base64.b64encode(continue_success_url.encode('utf-8')).decode('utf-8')
 
