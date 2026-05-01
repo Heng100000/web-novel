@@ -109,16 +109,22 @@ export function getMediaUrl(path?: string) {
   if (!path) return "/images/placeholder_character.png";
   if (path.startsWith("http")) return path;
   
-  // Hardcoded production fallback if environment variable is missing or wrong
-  const defaultApiUrl = "https://api.our-novel.com";
-  let baseUrl = defaultApiUrl;
+  // Ensure we have a clean base URL without trailing slashes or /api suffix
+  let baseUrl = "https://api.our-novel.com";
 
   if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) {
-    // If it's http://localhost:8000/api -> http://localhost:8000
-    baseUrl = process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, '');
+    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (envUrl.includes("localhost") || envUrl.includes("127.0.0.1")) {
+      baseUrl = envUrl.replace(/\/api\/?$/, '');
+    }
   }
 
   const cleanPath = path.replace(/^\//, '');
+  // Make sure baseUrl always starts with http if it's not already there
+  if (!baseUrl.startsWith("http")) {
+    baseUrl = `https://${baseUrl}`;
+  }
+  
   return `${baseUrl}/${cleanPath}`;
 }
 
