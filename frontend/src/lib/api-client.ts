@@ -131,4 +131,3 @@ export function getMediaUrl(path?: string) {
   
   return `${baseUrl}/${finalPath}`;
 }
-
