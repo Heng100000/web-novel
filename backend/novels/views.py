@@ -258,6 +258,27 @@ class AuthorViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        # 1. Update text data
+        data = request.data.copy()
+        serializer = self.get_serializer(instance, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        # 2. Handle Photo update
+        photo_file = request.FILES.get('photo')
+        if photo_file:
+            # Assigning the file directly to the ImageField triggers S3 upload
+            instance.photo_url = photo_file
+            instance.save()
+
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Categories.objects.all()
