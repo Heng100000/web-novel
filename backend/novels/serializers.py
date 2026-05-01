@@ -83,7 +83,15 @@ class BookSerializer(serializers.ModelSerializer):
         main_img = obj.bookimages_set.filter(is_main=1).first()
         if not main_img:
             main_img = obj.bookimages_set.first()
-        return main_img.image_url if main_img else None
+        
+        if main_img and main_img.image_url:
+            try:
+                # If it's an ImageField, we should return the .url
+                return main_img.image_url.url
+            except Exception:
+                # Fallback to the raw string value if .url fails
+                return str(main_img.image_url)
+        return None
 
     def _get_active_event(self, obj):
         # Cache the event to avoid duplicate queries within the same object serialization
