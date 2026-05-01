@@ -3,13 +3,16 @@ import { Metadata } from "next";
 import { decodeId } from "@/lib/id-obfuscator";
 
 async function getBookData(encodedId: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.our-novel.com/api";
   
   // Try to decode if it's not a direct number
   const decodedId = decodeId(encodedId) || encodedId;
   
   try {
-    const res = await fetch(`${baseUrl}/books/${decodedId}/`, { next: { revalidate: 60 } });
+    const res = await fetch(`${baseUrl}/books/${decodedId}/`, { 
+      next: { revalidate: 60 },
+      headers: { 'Accept': 'application/json' }
+    });
     if (!res.ok) return null;
     return res.json();
   } catch (error) {
@@ -19,7 +22,7 @@ async function getBookData(encodedId: string) {
 }
 
 async function getSimilarBooks(categoryId: number, currentBookId: number) {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.our-novel.com/api";
   
   try {
     const res = await fetch(`${baseUrl}/books/?category=${categoryId}&limit=5`, { next: { revalidate: 60 } });
