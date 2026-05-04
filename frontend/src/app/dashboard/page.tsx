@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { 
   IconBooks, IconOrders, IconUsers, 
   IconTrendingUp, IconAlertCircle, IconUserCheck,
-  IconCart, IconChevronRight, IconFileText
+  IconCart, IconChevronRight, IconFileText,
+  IconGlobe, IconEye
 } from "./dashboard-icons";
 import { DashboardCharts } from "./_components/dashboard-charts";
 import { apiClient } from "@/lib/api-client";
@@ -117,6 +118,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [bookCount, setBookCount] = useState<number>(0);
+  const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -132,10 +134,21 @@ export default function DashboardPage() {
       const orders = Array.isArray(ordersRes) ? ordersRes : (ordersRes as any).results || [];
       setRecentOrders(orders.slice(0, 5)); // Only top 5
 
-      // 3. Fetch Admin Stats if applicable
+      // 3. Fetch Admin Stats and Analytics if applicable
       if (isAdmin) {
-        const statsRes = await apiClient<AdminStats>("/orders/stats/");
-        setStats(statsRes);
+        const [statsRes, analyticsRes] = await Promise.all([
+          apiClient<AdminStats>("/orders/stats/"),
+          apiClient<any>("/analytics/")
+        ]);
+        
+        setStats({
+          ...statsRes,
+          total_site_visits: analyticsRes.total_site_visits,
+          total_book_views: analyticsRes.total_book_views,
+          visits_chart: analyticsRes.visits_chart,
+          top_books: analyticsRes.top_books
+        });
+        setAnalytics(analyticsRes);
       }
     } catch (err) {
       console.error("Dashboard fetch error", err);
@@ -174,23 +187,21 @@ export default function DashboardPage() {
           trendUp={(stats?.revenue_growth || 0) >= 0}
           href="/dashboard/orders"
         />
-          <StatCard 
-          label="ចំនួនវិក្កយបត្រ" 
-          value={(stats?.total_invoices || 0).toLocaleString()} 
-          icon={IconFileText} 
-          color="indigo" 
-          trend={`${Math.abs(stats?.invoice_growth || 0)}%`}
-          trendUp={(stats?.invoice_growth || 0) >= 0}
-          href="/dashboard/orders"
+        <StatCard 
+          label="ការចូលមើលវេបសាយ" 
+          value={(stats?.total_site_visits || 0).toLocaleString()} 
+          icon={IconGlobe} 
+          color="blue" 
+          trend="Real-time"
+          trendUp={true}
         />
         <StatCard 
-          label="ចំនួនអតិថិជន" 
-          value={(stats?.total_customers || 0).toLocaleString()} 
-          icon={IconUsers} 
-          color="blue" 
-          trend={`${Math.abs(stats?.customer_growth || 0)}%`}
-          trendUp={(stats?.customer_growth || 0) >= 0}
-          href="/dashboard/users"
+          label="ការមើលសៀវភៅ" 
+          value={(stats?.total_book_views || 0).toLocaleString()} 
+          icon={IconEye} 
+          color="purple" 
+          trend="Total Views"
+          trendUp={true}
         />
         <StatCard 
           label="ការបញ្ជាទិញមិនទាន់ទូទាត់" 
@@ -202,6 +213,195 @@ export default function DashboardPage() {
           href="/dashboard/orders"
         />
       </div>
+
+      {/* Analytics & Top Books Section */}
+      {isAdmin && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Chart Card */}
+          <div className="lg:col-span-2 rounded-3xl border border-grayborde bg-card-bg p-8 shadow-sm">
+             <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col gap-1">
+                   <h3 className="text-lg font-black tracking-tight text-text-main font-battambang">សកម្មភាពចូលមើលវេបសាយ</h3>
+                   <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest italic">ស្ថិតិក្នុងរយៈពេល ៧ ថ្ងៃចុងក្រោយ</p>
+                </div>
+                <div className="flex size-10 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-500 ring-1 ring-blue-500/10">
+                   <IconTrendingUp className="size-5" />
+                </div>
+             </div>
+             
+             <div className="h-[400px] w-full mt-8 relative group/chart">
+                {/* Horizontal Grid Lines */}
+                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
+                   {[...Array(6)].map((_, i) => (
+                      <div key={i} className="w-full h-px bg-zinc-200 dark:bg-zinc-800" />
+                   ))}
+                </div>
+
+                <svg className="w-full h-full overflow-visible" viewBox="0 0 1000 400" preserveAspectRatio="none">
+                   <defs>
+                      <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                         <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
+                         <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                      </linearGradient>
+                   </defs>
+
+                   {/* Path Generation Logic */}
+                   {(() => {
+                      let data = stats?.visits_chart || [];
+                      if (data.length === 0) return null;
+                      
+                      if (data.length === 1) {
+                        data = [{ date: 'Start', visits: 0 }, ...data];
+                      }
+                      
+                      const maxVisits = Math.max(...data.map(v => v.visits), 10);
+                      const width = 1000;
+                      const height = 400;
+                      const padding = 40; // Top/bottom padding
+                      const effectiveHeight = height - (padding * 2);
+                      
+                      const points = data.map((v, i) => ({
+                         x: (i / (data.length - 1)) * width,
+                         y: padding + (effectiveHeight - (v.visits / maxVisits) * effectiveHeight)
+                      }));
+
+                      let pathData = `M ${points[0].x},${points[0].y}`;
+                      for (let i = 0; i < points.length - 1; i++) {
+                         const curr = points[i];
+                         const next = points[i + 1];
+                         const cp1x = curr.x + (next.x - curr.x) / 2;
+                         const cp2x = curr.x + (next.x - curr.x) / 2;
+                         pathData += ` C ${cp1x},${curr.y} ${cp2x},${next.y} ${next.x},${next.y}`;
+                      }
+
+                      const areaPath = `${pathData} L ${points[points.length-1].x},${height} L ${points[0].x},${height} Z`;
+
+                      return (
+                         <>
+                            <path d={areaPath} fill="url(#chartGradient)" className="animate-in fade-in duration-1000" />
+                            <path 
+                              d={pathData} 
+                              fill="none" 
+                              stroke="#3b82f6" 
+                              strokeWidth="5" 
+                              strokeLinecap="round" 
+                              className="drop-shadow-[0_0_12px_rgba(59,130,246,0.6)]"
+                              style={{ strokeDasharray: 2000, strokeDashoffset: 2000, animation: 'draw 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards' }}
+                            />
+                         </>
+                      );
+                   })()}
+                </svg>
+
+                {/* Interaction Points Overlay */}
+                <div className="absolute inset-0 flex justify-between px-0">
+                   {stats?.visits_chart?.map((item, idx) => {
+                      const dataLength = stats?.visits_chart?.length || 1;
+                      const maxVisits = Math.max(...(stats?.visits_chart?.map(v => v.visits) || [10]), 10);
+                      const padding = 40;
+                      const height = 400;
+                      const effectiveHeight = height - (padding * 2);
+                      const bottomPx = padding + (effectiveHeight - (item.visits / maxVisits) * effectiveHeight);
+                      const bottomPercent = ((height - bottomPx) / height) * 100;
+                      
+                      return (
+                         <div key={idx} className="relative flex-1 flex flex-col items-center group/point">
+                            <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover/point:opacity-100 transition-opacity border-x border-blue-500/10" />
+                            
+                            <div 
+                               className="absolute transition-all duration-700 ease-out z-10"
+                               style={{ bottom: `${bottomPercent}%`, transform: 'translateY(50%)' }}
+                            >
+                               <div className="relative">
+                                  <div className="size-5 rounded-full bg-white dark:bg-zinc-900 border-[5px] border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.5)] group-hover/point:scale-125 transition-transform duration-300 ring-8 ring-blue-500/10" />
+                                  
+                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-5 opacity-0 group-hover/point:opacity-100 transition-all duration-400 scale-75 group-hover/point:scale-100 pointer-events-none z-30">
+                                     <div className="bg-zinc-900/95 backdrop-blur-xl text-white p-4 rounded-2xl shadow-2xl border border-white/10 min-w-[120px]">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">{item.date}</p>
+                                        <div className="flex items-center gap-2.5">
+                                           <div className="size-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)] animate-pulse" />
+                                           <span className="text-lg font-black">{item.visits} <span className="text-[10px] opacity-50 uppercase font-bold">Visits</span></span>
+                                        </div>
+                                     </div>
+                                     <div className="absolute top-full left-1/2 -translate-x-1/2 border-[10px] border-transparent border-t-zinc-900/95" />
+                                  </div>
+                               </div>
+                            </div>
+
+                            <div className="absolute -bottom-10">
+                               <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full border border-zinc-200 dark:border-zinc-700 shadow-sm">
+                                  {item.date.split('-').slice(1).join('/')}
+                               </span>
+                            </div>
+                         </div>
+                      );
+                   })}
+                </div>
+             </div>
+
+             <style jsx>{`
+                @keyframes draw {
+                   to { stroke-dashoffset: 0; }
+                }
+             `}</style>
+          </div>
+
+          {/* Top Books List */}
+          <div className="rounded-3xl border border-grayborde bg-card-bg p-8 shadow-sm flex flex-col group/list">
+             <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col gap-1">
+                   <h3 className="text-lg font-black tracking-tight text-text-main font-battambang">សៀវភៅពេញនិយមបំផុត</h3>
+                   <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest italic">ចំណាត់ថ្នាក់តាមចំនួនការចូលមើល</p>
+                </div>
+                <div className="flex size-11 items-center justify-center rounded-2xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 shadow-sm ring-1 ring-purple-500/10 group-hover/list:scale-110 transition-transform">
+                   <IconBooks className="size-5.5" />
+                </div>
+             </div>
+
+             <div className="flex flex-col gap-5 flex-1">
+                {stats?.top_books?.slice(0, 5).map((book, idx) => (
+                   <div key={book.id} className="flex items-center gap-4 group p-2 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-all">
+                      <div className="relative size-14 flex-shrink-0 rounded-xl overflow-hidden ring-1 ring-black/5 shadow-md group-hover:scale-105 transition-transform duration-500">
+                         <img src={book.image_url} alt={book.title} className="size-full object-cover" />
+                         <div className="absolute top-0 left-0 size-full bg-black/5 group-hover:bg-transparent transition-colors" />
+                         <div className="absolute top-1 left-1 size-5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm rounded-lg flex items-center justify-center text-[10px] font-black text-primary">
+                            {idx + 1}
+                         </div>
+                      </div>
+                      <div className="flex flex-col flex-1 min-w-0 gap-0.5">
+                         <h4 className="text-[13px] font-black text-text-main truncate group-hover:text-primary transition-colors font-battambang tracking-tight">{book.title}</h4>
+                         <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{book.category_details?.name || "Uncategorized"}</span>
+                            <div className="size-1 rounded-full bg-zinc-300" />
+                            <span className="text-[9px] font-bold text-primary opacity-80">${book.price}</span>
+                         </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                         <div className="flex items-center gap-1 text-primary">
+                            <IconEye className="size-3" />
+                            <span className="text-sm font-black tracking-tight">{book.views_count}</span>
+                         </div>
+                         <span className="text-[8px] font-black text-zinc-400 uppercase tracking-tighter opacity-60">Views</span>
+                      </div>
+                   </div>
+                ))}
+                {(!stats?.top_books || stats.top_books.length === 0) && (
+                   <div className="flex flex-col items-center justify-center py-12 gap-3 opacity-40">
+                      <IconBooks className="size-12" />
+                      <p className="text-[10px] font-black uppercase tracking-widest">មិនទាន់មានទិន្នន័យ</p>
+                   </div>
+                )}
+             </div>
+             
+             <Link href="/dashboard/books" className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-1 transition-all active:scale-[0.98] font-battambang group">
+                មើលសៀវភៅទាំងអស់ 
+                <div className="bg-white/20 p-1 rounded-lg group-hover:translate-x-1 transition-transform">
+                   <IconChevronRight className="size-3" />
+                </div>
+             </Link>
+          </div>
+        </div>
+      )}
 
       {/* Charts Section - Forced Visible */}
       <DashboardCharts 

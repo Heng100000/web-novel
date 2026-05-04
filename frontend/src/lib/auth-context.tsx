@@ -35,6 +35,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
+  token: string | null;
   login: (token: string, userData: User) => void;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -45,29 +46,43 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("access_token");
+    const initAuth = async () => {
+      const savedUser = localStorage.getItem("user");
+      const savedToken = localStorage.getItem("access_token");
 
-    if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
-      // Refresh user data from server on mount to sync points, etc.
-      apiClient<User>("/users/me/")
-        .then(userData => {
+      if (savedUser && savedToken) {
+        try {
+          setUser(JSON.parse(savedUser));
+          setToken(savedToken);
+          // Refresh user data from server on mount to sync roles, etc.
+          const userData = await apiClient<User>("/users/me/");
           localStorage.setItem("user", JSON.stringify(userData));
           setUser(userData);
-        })
-        .catch(err => console.error("Failed to sync user data:", err));
-    }
-    setLoading(false);
+        } catch (err) {
+          console.error("Failed to sync user data:", err);
+          // If token is invalid, clear it
+          if (err instanceof Error && err.message.includes("401")) {
+            logout();
+          }
+        }
+      }
+      setLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const login = (token: string, userData: User) => {
     localStorage.setItem("access_token", token);
     localStorage.setItem("user", JSON.stringify(userData));
+    // Clear tracking key to ensure login counts as a new visit
+    sessionStorage.removeItem("last_track_date");
+    setToken(token);
     setUser(userData);
   };
 
@@ -75,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
+    setToken(null);
     setUser(null);
     router.push("/login");
   };
@@ -115,7 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, login, logout, refreshUser, hasPermission }}>
+    <AuthContext.Provider value={{ user, token, loading, isAdmin, login, logout, refreshUser, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

@@ -2,17 +2,16 @@
 
 import React from "react";
 import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
   AreaChart,
   Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 
 interface InvoiceData {
@@ -29,10 +28,11 @@ interface SalesData {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#1e1e1e] px-4 py-2 rounded-xl shadow-2xl border border-white/10">
-        <div className="flex items-center gap-2">
-           <div className="size-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-           <span className="text-white text-xs font-black">${payload[0].value.toLocaleString()}</span>
+      <div className="backdrop-blur-xl bg-card-bg/90 px-4 py-3 rounded-2xl shadow-xl border border-grayborde animate-in fade-in zoom-in-95 duration-200">
+        <p className="text-[10px] font-black text-text-dim uppercase tracking-[0.2em] mb-1.5 font-battambang">{label}</p>
+        <div className="flex items-center gap-2.5">
+           <div className="size-2.5 rounded-full bg-primary shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+           <span className="text-text-main text-base font-black">${payload[0].value.toLocaleString()}</span>
         </div>
       </div>
     );
@@ -48,145 +48,153 @@ export function DashboardCharts({
   salesData?: SalesData[] 
 }) {
   const totalInvoices = invoiceData.reduce((acc, curr) => acc + curr.value, 0);
+  const totalSales = salesData.reduce((acc, curr) => acc + curr.amount, 0);
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Invoice Statistics (Doughnut) */}
-      <div className="relative rounded-3xl border border-grayborde bg-card-bg p-8 shadow-sm flex flex-col hover:shadow-lg transition-all">
-        <div className="flex items-center justify-between mb-8">
-          <h3 className="text-sm font-black text-text-dim/60 uppercase tracking-widest font-battambang">ស្ថិតិវិក្កយបត្រ</h3>
-          <div className="flex gap-1">
-             <div className="size-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-             <div className="size-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-             <div className="size-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-          </div>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
+      {/* Left Column: Invoice Distribution (Doughnut) */}
+      <div className="lg:col-span-5 relative overflow-hidden rounded-3xl border border-grayborde bg-card-bg p-8 shadow-sm flex flex-col group transition-all duration-300 hover:shadow-md">
+        <div className="flex flex-col gap-1 mb-8 relative">
+          <h3 className="text-[10px] font-black text-text-dim uppercase tracking-[0.2em] font-battambang">ស្ថានភាពវិក្កយបត្រ</h3>
+          <p className="text-xl font-black text-text-main tracking-tight">ទិន្នន័យសរុប</p>
         </div>
 
-        <div className="flex flex-1 flex-col sm:flex-row items-center gap-10 px-2">
-          <div className="relative w-full sm:w-[50%] h-[220px]">
+        <div className="flex flex-1 flex-col items-center justify-center gap-6 relative">
+          <div className="relative size-[230px]">
+            <div className="absolute inset-0 rounded-full border-[10px] border-bg-soft/50" />
+            
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={invoiceData.length > 0 ? invoiceData : [{ name: "Empty", value: 1, color: "#f1f5f9" }]}
+                  data={invoiceData.length > 0 ? invoiceData : [{ name: "Empty", value: 1, color: "var(--bg-soft)" }]}
                   cx="50%"
                   cy="50%"
-                  innerRadius={65}
-                  outerRadius={90}
+                  innerRadius={78}
+                  outerRadius={100}
                   paddingAngle={5}
+                  cornerRadius={8}
                   dataKey="value"
                   stroke="none"
-                  animationBegin={0}
+                  animationBegin={200}
                   animationDuration={1500}
                 >
                   {invoiceData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.name.includes('Paid') ? 'var(--primary)' : entry.color} 
+                      className="outline-none hover:opacity-80 transition-opacity" 
+                    />
                   ))}
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
             
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none font-battambang">
-               <span className="text-3xl font-black text-text-main tracking-tighter">{totalInvoices.toLocaleString()}</span>
-               <span className="text-[10px] font-bold text-text-dim/60 uppercase tracking-widest mt-1">វិក្កយបត្រ</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+               <span className="text-4xl font-black text-text-main tracking-tighter">{totalInvoices}</span>
+               <span className="text-[9px] font-black text-text-dim uppercase tracking-[0.2em] mt-1 font-battambang">សរុប</span>
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col gap-4 w-full">
+          <div className="flex flex-col gap-2.5 w-full mt-4">
              {invoiceData.map((item, i) => (
-               <div key={i} className="flex items-center justify-between group">
-                  <div className="flex items-center gap-2">
-                     <div className="size-2 rounded-full" style={{ backgroundColor: item.color }} />
-                     <span className="text-[11px] font-black text-text-dim group-hover:text-text-main transition-colors whitespace-nowrap font-battambang">
-                        {item.name === 'Paid' ? 'បង់រួច' : item.name === 'Unpaid' ? 'មិនទាន់បង់' : item.name}
+               <div key={i} className="flex items-center justify-between p-3.5 rounded-xl border border-grayborde/50 bg-bg-soft/20 hover:bg-bg-soft/40 transition-all duration-200">
+                  <div className="flex items-center gap-3">
+                     <div className="size-2.5 rounded-full" style={{ backgroundColor: item.name.includes('Paid') ? 'var(--primary)' : item.color }} />
+                     <span className="text-[13px] font-bold text-text-dim font-battambang">
+                        {item.name.includes('Paid') ? 'បង់រួច' : item.name.includes('Unpaid') ? 'មិនទាន់បង់' : item.name}
                      </span>
                   </div>
-                  <span className="text-lg font-black text-text-main group-hover:scale-110 transition-transform">{item.value.toLocaleString()}</span>
+                  <span className="text-base font-black text-text-main">{item.value.toLocaleString()}</span>
                </div>
              ))}
           </div>
         </div>
       </div>
 
-      {/* Sales Analytics (Line/Area) */}
-      <div className="relative lg:col-span-2 rounded-3xl border border-grayborde bg-card-bg p-8 shadow-sm hover:shadow-lg transition-all">
-        <div className="flex items-center justify-between mb-8">
-          <h3 className="text-sm font-black text-text-dim/60 uppercase tracking-widest font-battambang">ការវិភាគការលក់</h3>
-          <div className="flex gap-1">
-             <div className="size-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-             <div className="size-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-             <div className="size-1 rounded-full bg-zinc-300 dark:bg-zinc-600" />
+      {/* Right Column: Monthly Sales (Area Chart) */}
+      <div className="lg:col-span-7 relative overflow-hidden rounded-3xl border border-grayborde bg-card-bg p-8 shadow-sm group transition-all duration-300 hover:shadow-md">
+        <div className="flex items-center justify-between mb-10 relative">
+          <div className="flex flex-col gap-1">
+            <h3 className="text-[10px] font-black text-text-dim uppercase tracking-[0.3em] font-battambang">ការវិភាគការលក់</h3>
+            <p className="text-xl font-black text-text-main tracking-tight">ចំណូលប្រចាំខែ</p>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/5 text-primary border border-primary/10">
+             <div className="size-1.5 rounded-full bg-current animate-pulse" />
+             <span className="text-[10px] font-black uppercase tracking-widest">USD</span>
           </div>
         </div>
 
-        <div className="h-[300px] w-full mt-4">
+        <div className="h-[320px] w-full relative">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={salesData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+            <AreaChart data={salesData} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
               <defs>
-                <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                  <stop offset="40%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
                 </linearGradient>
-                {/* Glow Filter */}
-                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="3" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
               </defs>
               <CartesianGrid 
-                strokeDasharray="3 3" 
+                strokeDasharray="6 6" 
                 vertical={false} 
-                stroke="currentColor" 
-                className="text-border-dim/20" 
+                stroke="var(--grayborde)" 
+                opacity={0.3}
               />
               <XAxis 
                 dataKey="month" 
                 axisLine={false} 
                 tickLine={false} 
-                tick={{ fill: 'currentColor', fontSize: 10, fontWeight: 900 }}
-                className="text-text-dim/60"
+                tick={{ fill: 'var(--text-dim)', fontSize: 10, fontWeight: 800 }}
                 dy={15}
               />
               <YAxis 
                 axisLine={false} 
                 tickLine={false} 
-                tick={{ fill: 'currentColor', fontSize: 10, fontWeight: 900 }}
-                className="text-text-dim/60"
-                tickFormatter={(val) => val >= 1000 ? `${(val/1000).toFixed(1)}k` : val}
+                tick={{ fill: 'var(--text-dim)', fontSize: 10, fontWeight: 800 }}
+                tickFormatter={(val) => val >= 1000 ? `$${(val/1000).toFixed(0)}k` : `$${val}`}
               />
               <Tooltip 
                 content={<CustomTooltip />} 
-                cursor={{ stroke: '#3b82f6', strokeWidth: 2, strokeDasharray: '5 5', opacity: 0.4 }} 
+                cursor={{ stroke: 'var(--primary)', strokeWidth: 1, strokeDasharray: '4 4' }} 
               />
               <Area 
                 type="monotone" 
                 dataKey="amount" 
-                stroke="#3b82f6" 
+                stroke="var(--primary)" 
                 strokeWidth={4}
                 fillOpacity={1} 
-                fill="url(#colorAmount)"
-                animationDuration={2500}
-                filter="url(#glow)"
+                fill="url(#areaGradient)"
+                animationDuration={2000}
                 activeDot={{ 
                   r: 6, 
-                  stroke: '#fff', 
-                  strokeWidth: 3, 
-                  fill: '#3b82f6',
-                  className: "shadow-lg shadow-blue-500/50"
-                }}
-                dot={{ 
-                  r: 4, 
-                  fill: '#3b82f6', 
+                  stroke: 'var(--card-bg)', 
                   strokeWidth: 2, 
-                  stroke: '#fff',
-                  fillOpacity: 1,
-                  strokeOpacity: 1
+                  fill: 'var(--primary)',
+                  className: "shadow-lg"
                 }}
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
+
+        <div className="mt-10 grid grid-cols-3 gap-4 pt-8 border-t border-grayborde relative">
+           <div className="flex flex-col gap-0.5">
+              <span className="text-[9px] font-black text-text-dim uppercase tracking-widest font-battambang">ចំណូលសរុប</span>
+              <span className="text-lg font-black text-primary">${totalSales.toLocaleString()}</span>
+           </div>
+           <div className="flex flex-col gap-0.5 border-x border-grayborde px-4">
+              <span className="text-[9px] font-black text-text-dim uppercase tracking-widest font-battambang">ស្ថានភាព</span>
+              <span className="text-lg font-black text-emerald-500">សកម្ម</span>
+           </div>
+           <div className="flex flex-col gap-0.5 pl-2">
+              <span className="text-[9px] font-black text-text-dim uppercase tracking-widest font-battambang">ខែបច្ចុប្បន្ន</span>
+              <span className="text-lg font-black text-text-main">{salesData[salesData.length - 1]?.month || '-'}</span>
+           </div>
+        </div>
       </div>
     </div>
   );
 }
+
+
+
+

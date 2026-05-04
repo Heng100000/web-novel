@@ -10,14 +10,21 @@ import { AddToCartForm } from "../_components/forms/add-to-cart-form";
 import { CheckoutModal } from "../_components/checkout-modal";
 import { IconTruck } from "../dashboard-icons";
 import { PermissionGuard } from "../_components/permission-guard";
+import { formatImageUrl } from "@/lib/utils";
 
 interface CartEntry {
   id: number;
-  book: number;
+  user: number;
+  user_details?: {
+    full_name: string;
+    email: string;
+    avatar_url: string;
+  };
   book_details: {
     title: string;
     price: string;
     discounted_price: string | number;
+    image_url?: string;
   };
   quantity: number;
   batch_id: string | null;
@@ -29,6 +36,11 @@ interface CartGroup {
   created_at: string;
   items: CartEntry[];
   grandTotal: number;
+  user?: {
+    full_name: string;
+    email: string;
+    avatar_url: string;
+  };
 }
 
 export default function AddToCartListPage() {
@@ -70,7 +82,8 @@ export default function AddToCartListPage() {
           batch_id: bid,
           created_at: items[0].created_at,
           items,
-          grandTotal: total
+          grandTotal: total,
+          user: items[0].user_details
         };
       });
 
@@ -140,14 +153,31 @@ export default function AddToCartListPage() {
           <div className="flex flex-col gap-10">
             {groups.map((group) => (
               <div key={group.batch_id} className="flex flex-col gap-4">
-                <div className="flex items-center gap-4 px-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#3f6815] bg-[#3f6815]/5 px-3 py-1 rounded-full font-battambang">
-                    ក្រុម៖ {group.batch_id.startsWith('single-') ? 'ដាច់ដោយឡែក' : group.batch_id.slice(0, 8)}
-                  </span>
-                  <span className="text-[10px] font-bold text-text-dim/60 font-battambang">
-                    {new Date(group.created_at).toLocaleDateString('km-KH')} នៅម៉ោង {new Date(group.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  <div className="h-px flex-1 bg-grayborde/40" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-2">
+                  <div className="flex items-center gap-3">
+                    <div className="size-10 rounded-full border-2 border-[#3f6815]/10 overflow-hidden bg-zinc-100 ring-2 ring-white shadow-sm">
+                      {group.user?.avatar_url ? (
+                        <img src={group.user.avatar_url} alt="User" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-zinc-300">
+                           <IconPlus className="size-5" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-black text-text-main font-battambang">{group.user?.full_name || 'អតិថិជន'}</span>
+                      <span className="text-[10px] font-bold text-text-dim/60">{group.user?.email}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#3f6815] bg-[#3f6815]/5 px-3 py-1 rounded-full font-battambang">
+                      ក្រុម៖ {group.batch_id.startsWith('single-') ? 'ដាច់ដោយឡែក' : group.batch_id.slice(0, 8)}
+                    </span>
+                    <span className="text-[10px] font-bold text-text-dim/60 font-battambang">
+                      {new Date(group.created_at).toLocaleDateString('km-KH')} {new Date(group.created_at).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="overflow-hidden rounded-2xl border border-grayborde bg-card-bg shadow-md ring-1 ring-border-dim/5 transition-all hover:shadow-lg">
@@ -170,8 +200,16 @@ export default function AddToCartListPage() {
                           <tr key={item.id} className="group transition-colors hover:bg-bg-soft/10">
                             <td className="px-6 py-5">
                               <div className="flex items-center gap-4">
-                                <div className="flex size-10 items-center justify-center rounded-xl bg-bg-soft text-text-dim/40 group-hover:bg-[#3f6815]/10 group-hover:text-[#3f6815] transition-all">
-                                  <IconBooks className="size-5" />
+                                <div className="flex size-10 items-center justify-center rounded-xl bg-bg-soft text-text-dim/40 group-hover:bg-[#3f6815]/10 group-hover:text-[#3f6815] transition-all overflow-hidden border border-grayborde/20">
+                                  {item.book_details?.image_url ? (
+                                    <img 
+                                      src={formatImageUrl(item.book_details.image_url)} 
+                                      alt={item.book_details.title} 
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <IconBooks className="size-5" />
+                                  )}
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-sm font-black text-text-main leading-tight font-battambang">{item.book_details?.title}</span>

@@ -31,7 +31,7 @@ async function getBookData(encodedId: string) {
   return null;
 }
 
-async function getSimilarBooks(categoryId: number, currentBookId: number) {
+async function getSimilarBooks(authorId: number, currentBookId: number) {
   const urlsToTry = [
     process.env.NEXT_PUBLIC_API_URL || "https://api.our-novel.com/api",
     "http://127.0.0.1:8000/api"
@@ -39,7 +39,7 @@ async function getSimilarBooks(categoryId: number, currentBookId: number) {
 
   for (const baseUrl of urlsToTry) {
     try {
-      const fullUrl = `${baseUrl.replace(/\/$/, '')}/books/?category=${categoryId}&limit=5`;
+      const fullUrl = `${baseUrl.replace(/\/$/, '')}/books/?author=${authorId}&ordering=-views_count&limit=6`;
       const res = await fetch(fullUrl, { 
         next: { revalidate: 60 },
         headers: { 'Accept': 'application/json' }
@@ -48,7 +48,8 @@ async function getSimilarBooks(categoryId: number, currentBookId: number) {
       if (res.ok) {
         const data = await res.json();
         const results = Array.isArray(data) ? data : data.results || [];
-        return results.filter((b: any) => b.id !== currentBookId);
+        // Filter out current book and limit to 5
+        return results.filter((b: any) => b.id !== currentBookId).slice(0, 5);
       }
     } catch (error) {
       console.error(`Failed to fetch similar books from ${baseUrl}:`, error);
@@ -85,7 +86,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
     );
   }
 
-  const similarBooks = await getSimilarBooks(book.category, book.id);
+  const similarBooks = await getSimilarBooks(book.author, book.id);
 
   return <BookDetailClient book={book} similarBooks={similarBooks} />;
 }

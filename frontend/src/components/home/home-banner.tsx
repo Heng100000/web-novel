@@ -11,14 +11,67 @@ export default function HomeBanner() {
           {/* Background Decorative Elements */}
           <div className="absolute top-0 right-0 w-1/2 h-full bg-black/5 -skew-x-12 translate-x-20" />
           
+          {/* Stars Background Layer */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(20)].map((_, i) => (
+              <motion.div
+                key={`star-${i}`}
+                initial={{ opacity: 0 }}
+                animate={{ 
+                  opacity: [0.2, 0.8, 0.2],
+                  scale: [1, 1.5, 1],
+                }}
+                transition={{ 
+                  duration: 2 + Math.random() * 3, 
+                  repeat: Infinity, 
+                  delay: Math.random() * 5 
+                }}
+                className="absolute bg-white rounded-full blur-[0.5px]"
+                style={{
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  width: `${Math.random() * 3 + 1}px`,
+                  height: `${Math.random() * 3 + 1}px`,
+                }}
+              />
+            ))}
+          </div>
+          
           <div className="relative z-10 w-full flex flex-row items-center justify-between px-4 sm:px-16 lg:px-20 py-4 md:py-8 gap-2 md:gap-8">
-            {/* Character Illustration - Left Side */}
+            {/* Character Illustration - Left Side with Enhanced Reading & Blooming Effects */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative size-32 sm:size-64 lg:size-80 shrink-0 flex items-center justify-center"
+          >
+            {/* Background Glow & Aura */}
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="relative size-28 sm:size-64 lg:size-80 shrink-0"
-            >
-              <div className="absolute inset-0 bg-white/10 rounded-full blur-2xl md:blur-3xl" />
+              animate={{ 
+                scale: [1, 1.2, 1],
+                opacity: [0.3, 0.6, 0.3],
+                rotate: [0, 180, 360]
+              }}
+              transition={{ 
+                duration: 10, 
+                repeat: Infinity, 
+                ease: "linear" 
+              }}
+              className="absolute inset-0 bg-gradient-to-r from-amber-400/20 via-white/10 to-amber-400/20 rounded-full blur-[40px] md:blur-[60px]" 
+            />
+            
+            {/* Pulsing Core Glow */}
+            <motion.div 
+              animate={{ 
+                scale: [0.8, 1.1, 0.8],
+                opacity: [0.5, 0.8, 0.5]
+              }}
+              transition={{ 
+                duration: 4, 
+                repeat: Infinity, 
+                ease: "easeInOut" 
+              }}
+              className="absolute size-40 bg-amber-200/20 rounded-full blur-3xl" 
+            />
               <img
                 src="/images/cat.png"
                 alt="Character"

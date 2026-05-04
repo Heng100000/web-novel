@@ -146,8 +146,8 @@ export function CustomDateTimePicker({
         onClick={() => setIsOpen(true)}
         className="relative group cursor-pointer"
       >
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim/60 transition-colors group-hover:text-primary">
-          <IconCalendar className="size-4.5" />
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim/40 transition-colors group-hover:text-primary pointer-events-none">
+          <IconCalendar className="size-4" strokeWidth={1.8} />
         </div>
         <div className="input-standard input-with-icon flex items-center min-h-[44px]">
           <span className={`text-[13px] font-bold ${value ? 'text-text-main' : 'text-text-dim/40'}`}>

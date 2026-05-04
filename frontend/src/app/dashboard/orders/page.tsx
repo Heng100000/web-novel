@@ -38,6 +38,7 @@ interface Order {
   payment: {
     payment_method: string;
     payment_status: string;
+    receipt_image?: string;
   };
   invoice?: any;
 }
@@ -371,23 +372,47 @@ export default function OrdersHistoryPage() {
                       <h4 className="text-[11px] font-black uppercase tracking-widest text-text-dim/60 mb-3 flex items-center gap-2 font-battambang">
                         <IconCreditCard className="size-3.5" /> ព័ត៌មានទូទាត់ប្រាក់
                       </h4>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="size-10 overflow-hidden rounded-lg bg-bg-soft flex items-center justify-center text-text-dim/40 border border-grayborde/20 flex-shrink-0">
-                            {selectedOrder.payment.payment_method.toUpperCase() === 'CASH' ? (
-                              <IconCreditCard className="size-5" />
-                            ) : (
-                              <img src="/images/khqr.png" alt="KHQR" className="size-7 object-contain" />
-                            )}
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="size-10 overflow-hidden rounded-lg bg-bg-soft flex items-center justify-center text-text-dim/40 border border-grayborde/20 flex-shrink-0">
+                              {selectedOrder.payment.payment_method.toUpperCase() === 'CASH' ? (
+                                <IconCreditCard className="size-5" />
+                              ) : (
+                                <img src="/images/khqr.png" alt="KHQR" className="size-7 object-contain" />
+                              )}
+                            </div>
+                            <span className={`text-xs font-black uppercase tracking-wide ${selectedOrder.payment.payment_method === 'Cash' ? "text-amber-600 dark:text-amber-400" : "text-text-main"} font-battambang`}>
+                              {selectedOrder.payment.payment_method === 'Cash' ? "បង់ប្រាក់ពេលទទួលទំនិញ" : selectedOrder.payment.payment_method}
+                            </span>
                           </div>
-                          <span className={`text-xs font-black uppercase tracking-wide ${selectedOrder.payment.payment_method === 'Cash' ? "text-amber-600 dark:text-amber-400" : "text-text-main"} font-battambang`}>
-                            {selectedOrder.payment.payment_method === 'Cash' ? "បង់ប្រាក់ពេលទទួលទំនិញ" : selectedOrder.payment.payment_method}
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${selectedOrder.payment.payment_status === 'Completed' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                            } font-battambang`}>
+                            {selectedOrder.payment.payment_status === 'Completed' ? "រួចរាល់" : "រង់ចាំ"}
                           </span>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${selectedOrder.payment.payment_status === 'Completed' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                          } font-battambang`}>
-                          {selectedOrder.payment.payment_status === 'Completed' ? "រួចរាល់" : "រង់ចាំ"}
-                        </span>
+
+                        {/* Receipt Image Display */}
+                        {selectedOrder.payment.receipt_image && (
+                          <div className="mt-2 space-y-2">
+                             <span className="text-[9px] font-black uppercase tracking-widest text-text-dim/40 font-battambang flex items-center gap-2">
+                               <IconFileText className="size-3" /> រូបភាពបញ្ជាក់ការបង់ប្រាក់
+                             </span>
+                             <div className="relative group/receipt overflow-hidden rounded-xl border border-grayborde/40 bg-zinc-100/50">
+                                <img 
+                                  src={formatImageUrl(selectedOrder.payment.receipt_image)} 
+                                  alt="Payment Receipt" 
+                                  className="w-full h-auto max-h-[300px] object-contain cursor-zoom-in transition-transform duration-500 group-hover/receipt:scale-[1.02]"
+                                  onClick={() => window.open(formatImageUrl(selectedOrder.payment.receipt_image!), '_blank')}
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover/receipt:bg-black/5 transition-colors pointer-events-none flex items-center justify-center">
+                                   <div className="bg-white/90 backdrop-blur-sm p-2 rounded-lg shadow-xl scale-90 opacity-0 group-hover/receipt:opacity-100 group-hover/receipt:scale-100 transition-all duration-300">
+                                      <IconEye className="size-4 text-zinc-900" />
+                                   </div>
+                                </div>
+                             </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -560,23 +585,42 @@ export default function OrdersHistoryPage() {
                       <h4 className="text-[11px] font-black uppercase tracking-widest text-text-dim/60 mb-3 flex items-center gap-2 font-battambang">
                         <IconCreditCard className="size-3.5" /> ព័ត៌មានទូទាត់ប្រាក់
                       </h4>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="size-10 overflow-hidden rounded-lg bg-bg-soft flex items-center justify-center text-text-dim/40 border border-grayborde/20 flex-shrink-0">
-                            {selectedOrder.payment.payment_method.toUpperCase() === 'CASH' ? (
-                              <IconCreditCard className="size-5" />
-                            ) : (
-                              <img src="/images/khqr.png" alt="KHQR" className="size-7 object-contain" />
-                            )}
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="size-10 overflow-hidden rounded-lg bg-bg-soft flex items-center justify-center text-text-dim/40 border border-grayborde/20 flex-shrink-0">
+                              {selectedOrder.payment.payment_method.toUpperCase() === 'CASH' ? (
+                                <IconCreditCard className="size-5" />
+                              ) : (
+                                <img src="/images/khqr.png" alt="KHQR" className="size-7 object-contain" />
+                              )}
+                            </div>
+                            <span className={`text-xs font-black uppercase tracking-wide ${selectedOrder.payment.payment_method === 'Cash' ? "text-amber-600 dark:text-amber-400" : "text-text-main"} font-battambang`}>
+                              {selectedOrder.payment.payment_method === 'Cash' ? "បង់ប្រាក់ពេលទទួលទំនិញ" : selectedOrder.payment.payment_method}
+                            </span>
                           </div>
-                          <span className={`text-xs font-black uppercase tracking-wide ${selectedOrder.payment.payment_method === 'Cash' ? "text-amber-600 dark:text-amber-400" : "text-text-main"} font-battambang`}>
-                            {selectedOrder.payment.payment_method === 'Cash' ? "បង់ប្រាក់ពេលទទួលទំនិញ" : selectedOrder.payment.payment_method}
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${selectedOrder.payment.payment_status === 'Completed' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                            } font-battambang`}>
+                            {selectedOrder.payment.payment_status === 'Completed' ? "រួចរាល់" : "រង់ចាំ"}
                           </span>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${selectedOrder.payment.payment_status === 'Completed' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                          } font-battambang`}>
-                          {selectedOrder.payment.payment_status === 'Completed' ? "រួចរាល់" : "រង់ចាំ"}
-                        </span>
+
+                        {/* Mobile Receipt Image Display */}
+                        {selectedOrder.payment.receipt_image && (
+                          <div className="mt-2 space-y-2">
+                             <span className="text-[9px] font-black uppercase tracking-widest text-text-dim/40 font-battambang flex items-center gap-2">
+                               <IconFileText className="size-3" /> រូបភាពបញ្ជាក់ការបង់ប្រាក់
+                             </span>
+                             <div className="overflow-hidden rounded-xl border border-grayborde/40 bg-zinc-100/50">
+                                <img 
+                                  src={formatImageUrl(selectedOrder.payment.receipt_image)} 
+                                  alt="Payment Receipt" 
+                                  className="w-full h-auto max-h-[300px] object-contain"
+                                  onClick={() => window.open(formatImageUrl(selectedOrder.payment.receipt_image!), '_blank')}
+                                />
+                             </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

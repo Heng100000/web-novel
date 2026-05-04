@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -14,10 +14,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (mounted && !loading && !user) {
-      router.push("/login");
+    if (mounted && !loading) {
+      if (!user) {
+        router.push("/login");
+      } else if (!isAdmin) {
+        // ប្រសិនបើ Login ហើយ តែមិនមែនជា Admin ត្រូវដេញទៅទំព័រដើមវិញ
+        router.push("/");
+      }
     }
-  }, [user, loading, router, mounted]);
+  }, [user, loading, isAdmin, router, mounted]);
 
   if (!mounted || loading || !user) {
     return (

@@ -4,131 +4,74 @@
   /* Common variables */
   --transition-speed: 300ms;
 
-  /* Light theme variables */
+  /* --- Theme Variables (Modern Clean Light) --- */
   --background: #ffffff;
-  --foreground: #09090b;
-  --app-bg: #fafafa;
+  --foreground: #020617;
+  --app-bg: #f8fafc;
+  /* Slate-50 */
   --card-bg: #ffffff;
-  --border-dim: rgba(228, 228, 231, 0.6);
-  /* zinc-200/60 */
-  --text-main: #09090b;
-  /* zinc-950 */
-  --text-dim: #52525b;
-  /* zinc-600 */
-  --input-bg: #f1f5f9;
-  /* slate-100 */
+  --bg-soft: #f1f5f9;
+  /* Slate-100 */
 
-  /* Filament-Style Surface tokens */
-  --surface-1: #ffffff;
-  --surface-2: #fafafa;
-  --surface-3: #f4f4f5;
+  --text-main: #0f172a;
+  /* Slate-900 */
+  --text-dim: #64748b;
+  /* Slate-500 */
 
-  /* Premium Border & Ring colors */
-  --grayborde: #eeeeee;
-  --filament-border: var(--grayborde);
-  --filament-border-soft: #f4f4f5;
-  --filament-ring: rgba(63, 104, 21, 0.1);
+  --border-dim: rgba(15, 23, 42, 0.04);
+  /* Very subtle Slate-900 at 4% */
+  --grayborde: rgba(15, 23, 42, 0.06);
+  /* Subtle Slate-900 at 6% */
 
-  /* Advanced Shadows */
-  --filament-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --filament-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --filament-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-
-  /* Premium Input variables */
-  --input-ring: rgba(59, 96, 22, 0.1);
-  /* primary-green/10 */
-  --input-focus-border: #3b6016;
-  /* primary-green */
-  --input-error-border: #ef4444;
-  --input-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --bg-soft: #f4f4f5;
-  /* zinc-100 */
-
-  /* Brand Colors */
+  /* Primary Brand - The "Our Novel" Green */
   --primary: #3b6016;
   --primary-hover: #2d4a0f;
-  --secondary: #a3b18a;
-}
+  --primary-bg: rgba(59, 96, 22, 0.1);
 
-.dark {
-  /* Dark theme variables (Filament Style) */
-  --background: #18181b;
-  /* zinc-900 */
-  --foreground: #ffffff;
-  --app-bg: #09090b;
-  /* zinc-950 */
-  --card-bg: #18181b;
-  /* zinc-900 */
-  --bg-soft: #27272a;
-  /* zinc-800 */
-  --border-dim: rgba(39, 39, 42, 0.5);
-  /* zinc-800/50 */
-  --text-main: #ffffff;
-  --text-dim: #a1a1aa;
-  /* zinc-400 */
-  --input-bg: #09090b;
-  /* zinc-950 */
+  /* Surface Tokens */
+  --surface-1: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-3: #f1f5f9;
 
-  /* Surface tokens for Dark Mode */
-  --surface-1: #18181b;
-  --surface-2: #09090b;
-  --surface-3: #27272a;
+  /* Premium Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-premium: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
-  /* Premium Border & Ring colors for Dark Mode */
-  --grayborde: rgba(39, 39, 42, 0.8);
-  /* zinc-800/80 */
-  --filament-border: var(--grayborde);
-  --filament-border-soft: #27272a;
-  /* zinc-800 */
-  --filament-ring: rgba(16, 185, 129, 0.1);
-  /* emerald-500/10 */
+  /* Inputs */
+  --input-bg: #ffffff;
+  --input-ring: rgba(59, 96, 22, 0.15);
+  --input-focus: #3b6016;
 
-  /* Advanced Shadows for Dark Mode (Subtle) */
-  --filament-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-  --filament-shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-
-  /* Input variables for Dark Mode */
-  --input-ring: rgba(16, 185, 129, 0.05);
-  /* emerald-500/5 */
-  --input-focus-border: #10b981;
-  /* emerald-500 */
-
-  /* Brand Colors for Dark Mode */
-  --primary: #10b981;
-  /* emerald-500 */
-  --primary-hover: #059669;
-  /* emerald-600 */
+  /* Professional Standard Radius - Subtle & Modern */
+  --radius-3xl: 16px;
+  --radius-2xl: 12px;
+  --radius-xl: 10px;
+  --radius-lg: 8px;
+  --radius-md: 6px;
+  --radius-sm: 4px;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-lato);
-  --font-heading: var(--font-lato);
-  --font-battambang: "Battambang", cursive, sans-serif;
-  --font-hanuman: "Hanuman", serif;
+  --font-sans: "Kantumruy Pro", "Inter", sans-serif;
+  --font-heading: "Kantumruy Pro", "Inter", sans-serif;
   --font-kantumruy: "Kantumruy Pro", sans-serif;
-  --font-lato: "Lato", sans-serif;
+  --font-inter: "Inter", sans-serif;
 
-  /* Semantic additions */
+  /* Semantic Color Mapping */
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
-  --color-primary-bg: rgba(63, 104, 21, 0.1);
   --color-app-bg: var(--app-bg);
   --color-card-bg: var(--card-bg);
   --color-bg-soft: var(--bg-soft);
-  --color-input-bg: var(--input-bg);
-  --color-border-dim: var(--grayborde);
-  --color-grayborde: var(--grayborde);
   --color-text-main: var(--text-main);
   --color-text-dim: var(--text-dim);
-
-  /* Global Radius Reductions - Subtle & Modern Professional */
-  --radius-3xl: 6px;
-  --radius-2xl: 4px;
-  --radius-xl: 3px;
-  --radius-lg: 2px;
-  --radius-md: 1px;
+  --color-grayborde: var(--grayborde);
+  --color-border-dim: var(--border-dim);
+  --color-input-bg: var(--input-bg);
 }
 
 * {
@@ -152,7 +95,7 @@
 body {
   background: var(--app-bg);
   color: var(--text-main);
-  font-family: 'Kantumruy Pro', 'Lato', 'Battambang', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-kantumruy);
   min-height: 100vh;
 }
 
@@ -175,61 +118,45 @@ body {
   opacity: 0.5;
 }
 
-/* Standardized Button Components */
+/* Animations */
 @layer components {
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+  }
+
   .animate-float {
     animation: float 15s ease-in-out infinite;
   }
-  .animate-float-delayed {
-    animation: float 20s ease-in-out infinite reverse;
-  }
-  
-  @keyframes float {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    33% { transform: translate(30px, -50px) scale(1.1); }
-    66% { transform: translate(-20px, 20px) scale(0.9); }
-  }
-
-  @keyframes magical-float {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    33% { transform: translate(20px, -40px) rotate(10deg); }
-    66% { transform: translate(-15px, 20px) rotate(-10deg); }
-    100% { transform: translate(0, 0) rotate(0deg); }
-  }
-
-  @keyframes twinkle {
-    0%, 100% { opacity: 0.2; transform: scale(0.8); }
-    50% { opacity: 0.8; transform: scale(1.2); }
-  }
-
-  .animate-magical-float {
-    animation: magical-float 25s ease-in-out infinite;
-  }
-
-  .animate-twinkle {
-    animation: twinkle 4s ease-in-out infinite;
-  }
-
-  @keyframes progress-indeterminate {
-    0% { transform: translateX(-100%); }
-    50% { transform: translateX(100%); }
-    100% { transform: translateX(-100%); }
-  }
-
-  .animate-progress-indeterminate {
-    animation: progress-indeterminate 2s linear infinite;
-  }
 
   @keyframes fade-in-up {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .animate-fade-in-up {
     animation: fade-in-up 0.5s ease-out forwards;
   }
 
-  /* Premium Nav Underline Animation */
+  /* Nav Link Underline */
   .nav-link-premium {
     position: relative;
     padding-bottom: 2px;
@@ -242,74 +169,38 @@ body {
     left: 0;
     width: 0;
     height: 2px;
-    background-color: #3b6016;
+    background-color: var(--primary);
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .nav-link-premium:hover::after {
-    width: 100%;
-  }
-
+  .nav-link-premium:hover::after,
   .nav-link-active::after {
     width: 100%;
   }
 
-  /* Premium Scrollbar for Sidebar */
-  .scrollbar-sidebar::-webkit-scrollbar {
-    width: 4px;
-  }
-  .scrollbar-sidebar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .scrollbar-sidebar::-webkit-scrollbar-thumb {
-    background: rgba(150, 150, 150, 0.2);
-    border-radius: 20px;
-    border: 1px solid transparent;
-    background-clip: content-box;
-  }
-  .scrollbar-sidebar::-webkit-scrollbar-thumb:hover {
-    background: var(--primary);
-    border: 0px solid transparent;
-  }
-
-  .input-standard {
-    @apply w-full rounded-lg border border-grayborde bg-input-bg px-4 py-2.5 text-sm font-medium text-text-main outline-none transition-all placeholder:text-text-dim/40 focus:border-primary dark:focus:border-emerald-500 focus:ring-[3px] focus:ring-primary/10 dark:focus:ring-emerald-500/10 shadow-sm;
-  }
-
-  /* Specific style for inputs with icons (left padding) */
-  .input-with-icon {
-    @apply pl-11;
-  }
-
-  .btn-primary,
-  .btn-secondary,
-  .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg text-sm font-bold uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed font-battambang shadow-sm h-11 px-6;
-  }
-
+  /* Buttons */
   .btn-primary {
-    @apply bg-primary text-white hover:opacity-90 shadow-primary/10;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-white font-bold uppercase tracking-widest transition-all hover:opacity-90 active:scale-95 shadow-lg shadow-primary/20 h-11 px-6;
   }
 
   .btn-secondary {
-    @apply border border-grayborde bg-card-bg text-text-main hover:bg-bg-soft hover:text-primary dark:hover:text-emerald-500;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border-dim bg-card-bg text-text-main font-bold uppercase tracking-widest transition-all hover:bg-bg-soft active:scale-95 h-11 px-6 shadow-sm;
   }
 
-  .btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700 shadow-red-900/10;
+  .input-standard {
+    @apply w-full rounded-lg border border-border-dim bg-input-bg px-4 py-2.5 text-sm font-medium text-text-main outline-none transition-all placeholder:text-text-dim/40 focus:border-primary focus:ring-[4px] focus:ring-primary/10 shadow-sm;
   }
 
-  /* Specific size for full-width buttons like Login */
-  .btn-xl {
-    @apply h-12 px-8 text-sm;
+  .input-with-icon {
+    @apply !pl-11;
   }
+}
 
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
+.container-premium {
+  @apply mx-auto w-full px-4 sm:px-6 lg:px-8;
+  max-width: 1200px;
+}
 
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+.filament-input {
+  @apply w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-[13px] font-medium text-zinc-900 shadow-sm outline-none transition-all placeholder:text-zinc-400 focus:border-primary focus:ring-2 focus:ring-primary/10;
 }

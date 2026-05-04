@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Search as SearchIcon, X, Loader2 } from "lucide-react";
 import { apiClient, getMediaUrl } from "@/lib/api-client";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "@/lib/language-context";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [initialBooks, setInitialBooks] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const fetchInitialBooks = async () => {
@@ -97,8 +99,8 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="ស្វែងរកសៀវភៅ ឬផលិតផល..."
-                    className="flex-1 py-3.5 text-base font-bold outline-none placeholder:text-zinc-400 bg-transparent"
+                    placeholder={t("search_books_placeholder")}
+                    className="flex-1 py-3.5 text-base font-bold text-zinc-800 outline-none placeholder:text-zinc-400 bg-transparent"
                   />
                   {query && (
                     <button 
@@ -122,11 +124,11 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar bg-zinc-50/30">
               <div className="mb-4 flex items-center justify-between px-1">
                 <h3 className="text-sm font-black text-zinc-400 uppercase tracking-wider">
-                  {query.trim() === "" ? "ផលិតផលពេញនិយម" : "លទ្ធផលស្វែងរក"}
+                  {query.trim() === "" ? t("popular_products") : t("search_results")}
                 </h3>
                 {query.trim() !== "" && !loading && (
                   <span className="text-[10px] font-black bg-zinc-100 px-2 py-1 rounded text-zinc-500">
-                    ឃើញ {results.length} លទ្ធផល
+                    {t("found")} {results.length} {t("results_unit")}
                   </span>
                 )}
               </div>
@@ -173,13 +175,13 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <div className="size-20 rounded-full bg-white shadow-sm flex items-center justify-center text-zinc-200 mb-4 border border-zinc-50">
                     <SearchIcon className="size-10" />
                   </div>
-                  <h3 className="text-lg font-black text-zinc-800">រកមិនឃើញលទ្ធផល</h3>
-                  <p className="text-sm font-bold text-zinc-400 mt-1">សូមសាកល្បងស្វែងរកពាក្យផ្សេង ឬពិនិត្យអក្ខរាវិរុទ្ធ។</p>
+                  <h3 className="text-lg font-black text-zinc-800">{t("no_books_found")}</h3>
+                  <p className="text-sm font-bold text-zinc-400 mt-1">{t("try_another_search")}</p>
                 </div>
               ) : (
                 <div className="py-20 flex flex-col items-center justify-center gap-4">
                   <Loader2 className="size-10 text-[#3b6016] animate-spin" />
-                  <p className="text-xs font-black text-zinc-400 animate-pulse">កំពុងស្វែងរក...</p>
+                  <p className="text-xs font-black text-zinc-400 animate-pulse">{t("searching")}</p>
                 </div>
               )}
             </div>
@@ -189,11 +191,11 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
               <div className="flex items-center justify-center gap-6">
                 <div className="flex items-center gap-2 text-[10px] font-black text-zinc-400">
                   <span className="px-1.5 py-0.5 bg-white border border-zinc-200 rounded shadow-sm text-zinc-600">ESC</span>
-                  <span>ដើម្បីបិទ</span>
+                  <span>{t("esc_to_close")}</span>
                 </div>
                 <div className="flex items-center gap-2 text-[10px] font-black text-zinc-400">
                   <span className="px-1.5 py-0.5 bg-white border border-zinc-200 rounded shadow-sm text-zinc-600">ENTER</span>
-                  <span>ដើម្បីមើលផលិតផល</span>
+                  <span>{t("enter_to_view")}</span>
                 </div>
               </div>
             </div>

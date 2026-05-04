@@ -1,12 +1,7 @@
 import "./globals.css";
-import { AuthProvider } from "@/lib/auth-context";
-import { CartProvider } from "@/lib/cart-context";
-import { ThemeProvider } from "@/lib/theme-context";
 import { Metadata } from "next";
-import { Toaster } from "sonner";
-import ChatButton from "@/components/chat-button";
 import NextTopLoader from "nextjs-toploader";
-import PageWrapper from "@/components/page-wrapper";
+import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: "Book Novel | Premium Bookstore",
@@ -27,47 +22,13 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@100;300;400;700;900&family=Hanuman:wght@100..900&family=Kantumruy+Pro:ital,wght@0,100..700;1,100..700&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet" />
-        {/* Proactive Hydration Fix: Clear extension-injected attributes before React takes over */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                const clean = (target) => {
-                  if (target.nodeType === 1) {
-                    if (target.hasAttribute('bis_skin_checked')) target.removeAttribute('bis_skin_checked');
-                    target.querySelectorAll('[bis_skin_checked]').forEach(el => el.removeAttribute('bis_skin_checked'));
-                  }
-                };
-                clean(document.documentElement);
-                const observer = new MutationObserver((mutations) => {
-                  mutations.forEach((mutation) => {
-                    if (mutation.type === 'attributes' && mutation.attributeName === 'bis_skin_checked') {
-                      mutation.target.removeAttribute('bis_skin_checked');
-                    }
-                    if (mutation.type === 'childList') {
-                      mutation.addedNodes.forEach(clean);
-                    }
-                  });
-                });
-                observer.observe(document.documentElement, { 
-                  childList: true, 
-                  subtree: true, 
-                  attributes: true, 
-                  attributeFilter: ['bis_skin_checked'] 
-                });
-                window.addEventListener('load', () => clean(document.documentElement));
-              })();
-            `,
-          }}
-        />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Kantumruy+Pro:ital,wght@0,100..700;1,100..700&family=Siemreap&family=Battambang:wght@400;700&display=swap" rel="stylesheet" />
       </head>
-      <body 
-        className="min-h-full flex flex-col"
-        style={{ fontFamily: "'Kantumruy Pro', 'Inter', sans-serif" }}
+      <body
+        className="min-h-full flex flex-col font-kantumruy"
         suppressHydrationWarning
       >
-        <NextTopLoader 
+        <NextTopLoader
           color="#3b6016"
           initialPosition={0.08}
           crawlSpeed={200}
@@ -78,17 +39,9 @@ export default function RootLayout({
           speed={200}
           shadow="0 0 10px #3b6016,0 0 5px #3b6016"
         />
-        <ThemeProvider>
-          <AuthProvider>
-            <CartProvider>
-              <PageWrapper>
-                {children}
-              </PageWrapper>
-              <Toaster position="top-right" richColors />
-              <ChatButton />
-            </CartProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

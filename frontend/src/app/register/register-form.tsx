@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
@@ -13,6 +14,21 @@ import {
   IconLoader
 } from "../dashboard/dashboard-icons";
 import { apiClient } from "@/lib/api-client";
+
+function RegisterLogo() {
+  return (
+    <div className="relative mx-auto h-14 w-[min(100%,180px)] shrink-0 sm:h-24 lg:h-20">
+      <Image
+        src="/images/logo_full.png"
+        alt="Book novel"
+        fill
+        className="object-contain object-center drop-shadow-sm"
+        sizes="280px"
+        priority
+      />
+    </div>
+  );
+}
 
 export function RegisterForm() {
   const router = useRouter();
@@ -59,15 +75,16 @@ export function RegisterForm() {
   return (
     <div className="flex flex-col gap-8 sm:gap-10">
       {/* Header */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          <div className="size-10 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 sm:size-12">
-             <IconUser className="size-6 text-white sm:size-7" />
-          </div>
-          <h2 className="text-2xl font-black text-zinc-900 tracking-tight sm:text-3xl">ចុះឈ្មោះ</h2>
+      <header className="flex flex-col items-center gap-6 text-center">
+        <RegisterLogo />
+        <div className="flex flex-col gap-1 sm:gap-2">
+          <h1 className="text-xl font-black tracking-tight text-[#3b6016] sm:text-3xl lg:text-4xl">
+            ចុះឈ្មោះ
+          </h1>
+          <div className="h-1 w-12 rounded-full bg-[#3b6016]/20 mx-auto sm:h-1.5 sm:w-16" />
         </div>
-        <p className="text-sm font-bold text-zinc-500 sm:text-base">សូមបំពេញព័ត៌មានខាងក្រោមដើម្បីបង្កើតគណនី</p>
-      </div>
+        <p className="text-sm font-bold text-zinc-500 sm:text-base max-w-[280px]">សូមបំពេញព័ត៌មានខាងក្រោមដើម្បីបង្កើតគណនី</p>
+      </header>
 
       {error && (
         <div className="rounded-xl bg-red-50 p-4 border border-red-100 animate-in fade-in slide-in-from-top-2">
@@ -79,11 +96,11 @@ export function RegisterForm() {
         <div className="flex flex-col gap-4 sm:gap-6">
           {/* Full Name Field */}
           <div className="flex flex-col gap-1.5 sm:gap-2.5">
-            <label htmlFor="full_name" className="text-[10px] font-black text-zinc-700 px-1 uppercase tracking-wider sm:text-sm">
+            <label htmlFor="full_name" className="text-xs font-black text-zinc-700 px-1 uppercase tracking-wider sm:text-sm">
               ឈ្មោះពេញ <span className="text-red-500">*</span>
             </label>
             <div className="relative group/field">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 transition-colors group-focus-within/field:text-primary sm:left-5">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 transition-colors group-focus-within/field:text-[#3b6016] sm:left-5">
                 <IconUser className="size-5 sm:size-6" />
               </div>
               <input
@@ -92,18 +109,18 @@ export function RegisterForm() {
                 type="text"
                 required
                 placeholder="បញ្ចូលឈ្មោះពេញរបស់អ្នក"
-                className="w-full rounded-xl border-2 border-zinc-100 bg-zinc-50/50 pl-12 pr-4 py-2.5 text-sm font-bold text-zinc-900 outline-none transition-all placeholder:font-medium placeholder:text-zinc-300 focus:border-primary focus:bg-white focus:shadow-lg focus:shadow-primary/5 sm:rounded-2xl sm:pl-14 sm:pr-6 sm:py-4.5 sm:text-base"
+                className="w-full rounded-xl border-2 border-zinc-100 bg-zinc-50/50 pl-12 pr-4 py-2.5 text-sm font-bold text-zinc-900 outline-none transition-all placeholder:font-medium placeholder:text-zinc-300 focus:border-[#3b6016] focus:bg-white focus:shadow-lg focus:shadow-[#3b6016]/5 sm:rounded-2xl sm:pl-14 sm:pr-6 sm:py-4.5 sm:text-base"
               />
             </div>
           </div>
 
           {/* Email Field */}
           <div className="flex flex-col gap-1.5 sm:gap-2.5">
-            <label htmlFor="email" className="text-[10px] font-black text-zinc-700 px-1 uppercase tracking-wider sm:text-sm">
+            <label htmlFor="email" className="text-xs font-black text-zinc-700 px-1 uppercase tracking-wider sm:text-sm">
               អាសយដ្ឋានអ៊ីមែល <span className="text-red-500">*</span>
             </label>
             <div className="relative group/field">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 transition-colors group-focus-within/field:text-primary sm:left-5">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 transition-colors group-focus-within/field:text-[#3b6016] sm:left-5">
                 <IconMail className="size-5 sm:size-6" />
               </div>
               <input
@@ -112,7 +129,7 @@ export function RegisterForm() {
                 type="email"
                 required
                 placeholder="បញ្ចូលអ៊ីមែលរបស់អ្នក"
-                className="w-full rounded-xl border-2 border-zinc-100 bg-zinc-50/50 pl-12 pr-4 py-2.5 text-sm font-bold text-zinc-900 outline-none transition-all placeholder:font-medium placeholder:text-zinc-300 focus:border-primary focus:bg-white focus:shadow-lg focus:shadow-primary/5 sm:rounded-2xl sm:pl-14 sm:pr-6 sm:py-4.5 sm:text-base"
+                className="w-full rounded-xl border-2 border-zinc-100 bg-zinc-50/50 pl-12 pr-4 py-2.5 text-sm font-bold text-zinc-900 outline-none transition-all placeholder:font-medium placeholder:text-zinc-300 focus:border-[#3b6016] focus:bg-white focus:shadow-lg focus:shadow-[#3b6016]/5 sm:rounded-2xl sm:pl-14 sm:pr-6 sm:py-4.5 sm:text-base"
               />
             </div>
           </div>
@@ -121,11 +138,11 @@ export function RegisterForm() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
             {/* Password */}
             <div className="flex flex-col gap-1.5 sm:gap-2.5">
-              <label htmlFor="password" className="text-[10px] font-black text-zinc-700 px-1 uppercase tracking-wider sm:text-sm">
+              <label htmlFor="password" className="text-xs font-black text-zinc-700 px-1 uppercase tracking-wider sm:text-sm">
                 លេខសម្ងាត់ <span className="text-red-500">*</span>
               </label>
               <div className="relative group/field">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 transition-colors group-focus-within/field:text-primary sm:left-5">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 transition-colors group-focus-within/field:text-[#3b6016] sm:left-5">
                   <IconHash className="size-5 sm:size-6" />
                 </div>
                 <input
@@ -134,18 +151,18 @@ export function RegisterForm() {
                   type={showPassword ? "text" : "password"}
                   required
                   placeholder="••••••••"
-                  className="w-full rounded-xl border-2 border-zinc-100 bg-zinc-50/50 pl-12 pr-12 py-2.5 text-sm font-bold text-zinc-900 outline-none transition-all placeholder:text-zinc-300 focus:border-primary focus:bg-white focus:shadow-lg focus:shadow-primary/5 sm:rounded-2xl sm:pl-14 sm:pr-14 sm:py-4.5 sm:text-base"
+                  className="w-full rounded-xl border-2 border-zinc-100 bg-zinc-50/50 pl-12 pr-12 py-2.5 text-sm font-bold text-zinc-900 outline-none transition-all placeholder:text-zinc-300 focus:border-[#3b6016] focus:bg-white focus:shadow-lg focus:shadow-[#3b6016]/5 sm:rounded-2xl sm:pl-14 sm:pr-14 sm:py-4.5 sm:text-base"
                 />
               </div>
             </div>
 
             {/* Confirm Password */}
             <div className="flex flex-col gap-1.5 sm:gap-2.5">
-              <label htmlFor="password_confirm" className="text-[10px] font-black text-zinc-700 px-1 uppercase tracking-wider sm:text-sm">
+              <label htmlFor="password_confirm" className="text-xs font-black text-zinc-700 px-1 uppercase tracking-wider sm:text-sm">
                 បញ្ជាក់លេខសម្ងាត់ <span className="text-red-500">*</span>
               </label>
               <div className="relative group/field">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 transition-colors group-focus-within/field:text-primary sm:left-5">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 transition-colors group-focus-within/field:text-[#3b6016] sm:left-5">
                   <IconHash className="size-5 sm:size-6" />
                 </div>
                 <input
@@ -154,11 +171,11 @@ export function RegisterForm() {
                   type={showPassword ? "text" : "password"}
                   required
                   placeholder="••••••••"
-                  className="w-full rounded-xl border-2 border-zinc-100 bg-zinc-50/50 pl-12 pr-12 py-2.5 text-sm font-bold text-zinc-900 outline-none transition-all placeholder:text-zinc-300 focus:border-primary focus:bg-white focus:shadow-lg focus:shadow-primary/5 sm:rounded-2xl sm:pl-14 sm:pr-14 sm:py-4.5 sm:text-base"
+                  className="w-full rounded-xl border-2 border-zinc-100 bg-zinc-50/50 pl-12 pr-12 py-2.5 text-sm font-bold text-zinc-900 outline-none transition-all placeholder:text-zinc-300 focus:border-[#3b6016] focus:bg-white focus:shadow-lg focus:shadow-[#3b6016]/5 sm:rounded-2xl sm:pl-14 sm:pr-14 sm:py-4.5 sm:text-base"
                 />
                 <button
                   type="button"
-                  className="absolute right-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-xl text-zinc-300 transition-all hover:bg-zinc-50 hover:text-primary sm:right-3 sm:size-11"
+                  className="absolute right-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-xl text-zinc-300 transition-all hover:bg-zinc-50 hover:text-[#3b6016] sm:right-3 sm:size-11"
                   onClick={() => setShowPassword((v) => !v)}
                 >
                   {showPassword ? <IconEyeOff className="size-5 sm:size-6" /> : <IconEye className="size-5 sm:size-6" />}
@@ -172,10 +189,10 @@ export function RegisterForm() {
           <button
             type="submit"
             disabled={loading}
-            className="group relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl bg-zinc-900 text-sm font-black text-white transition-all hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-70 sm:h-16 sm:rounded-2xl sm:text-base"
+            className="group relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl bg-[#3b6016] text-sm font-black text-white shadow-xl shadow-[#3b6016]/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 sm:h-16 sm:rounded-2xl sm:text-base"
           >
             {loading ? (
-              <IconLoader className="size-6 animate-spin text-primary" />
+              <IconLoader className="size-6 animate-spin text-white" />
             ) : (
               <div className="flex items-center gap-3">
                 បង្កើតគណនី
@@ -186,7 +203,7 @@ export function RegisterForm() {
 
           <p className="text-center text-xs font-bold text-zinc-400 sm:text-sm">
             មានគណនីរួចហើយ? 
-            <Link href="/login" className="ml-2 text-primary hover:underline">ចូលប្រើប្រាស់</Link>
+            <Link href="/login" className="ml-2 text-[#3b6016] hover:underline">ចូលប្រើប្រាស់</Link>
           </p>
         </div>
       </form>

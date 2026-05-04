@@ -153,10 +153,10 @@ export function LoginForm() {
       <header className="flex flex-col items-center gap-6 text-center">
         <LoginLogo />
         <div className="flex flex-col gap-1 sm:gap-2">
-          <h1 className="text-xl font-black tracking-tight text-primary sm:text-3xl lg:text-4xl">
+          <h1 className="text-xl font-black tracking-tight text-[#3b6016] sm:text-3xl lg:text-4xl">
             ចូលប្រើប្រាស់
           </h1>
-          <div className="h-1 w-12 rounded-full bg-primary/20 mx-auto sm:h-1.5 sm:w-16" />
+          <div className="h-1 w-12 rounded-full bg-[#3b6016]/20 mx-auto sm:h-1.5 sm:w-16" />
         </div>
         
         {error && (
@@ -171,9 +171,9 @@ export function LoginForm() {
         )}
 
         {successMessage && (
-          <div className="w-full rounded-2xl p-4 text-center text-sm font-bold border border-emerald-200 bg-emerald-50 text-emerald-600 animate-in slide-in-from-top-2 duration-300">
+          <div className="w-full rounded-2xl p-4 text-center text-sm font-bold border border-primary/20 bg-primary/5 text-primary animate-in slide-in-from-top-2 duration-300">
             <span className="flex items-center justify-center gap-2">
-              <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="size-2 rounded-full bg-primary animate-pulse" />
               {successMessage}
             </span>
           </div>
@@ -220,11 +220,11 @@ export function LoginForm() {
           <div className="flex flex-col gap-3 sm:gap-6">
             {/* Email Field */}
             <div className="flex flex-col gap-1.5 sm:gap-2.5">
-              <label htmlFor="email" className="text-[10px] font-black text-zinc-700 px-1 uppercase tracking-wider sm:text-sm">
+              <label htmlFor="email" className="text-xs font-black text-zinc-700 px-1 uppercase tracking-wider sm:text-sm">
                 អាសយដ្ឋានអ៊ីមែល <span className="text-red-500">*</span>
               </label>
               <div className="relative group/field">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 transition-colors group-focus-within/field:text-primary sm:left-5">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 transition-colors group-focus-within/field:text-[#3b6016] sm:left-5">
                   <IconMail className="size-5 sm:size-6" />
                 </div>
                 <input
@@ -234,7 +234,7 @@ export function LoginForm() {
                   type="email"
                   required
                   placeholder="បញ្ចូលអ៊ីមែលរបស់អ្នក"
-                  className="w-full rounded-xl border-2 border-zinc-100 bg-zinc-50/50 pl-12 pr-4 py-2.5 text-sm font-bold text-zinc-900 outline-none transition-all placeholder:font-medium placeholder:text-zinc-300 focus:border-primary focus:bg-white focus:shadow-lg focus:shadow-primary/5 sm:rounded-2xl sm:pl-14 sm:pr-6 sm:py-4.5 sm:text-base"
+                  className="w-full rounded-xl border-2 border-zinc-100 bg-zinc-50/50 pl-12 pr-4 py-2.5 text-sm font-bold text-zinc-900 outline-none transition-all placeholder:font-medium placeholder:text-zinc-300 focus:border-[#3b6016] focus:bg-white focus:shadow-lg focus:shadow-[#3b6016]/5 sm:rounded-2xl sm:pl-14 sm:pr-6 sm:py-4.5 sm:text-base"
                 />
               </div>
             </div>
@@ -242,13 +242,13 @@ export function LoginForm() {
             {/* Password Field */}
             <div className="flex flex-col gap-1.5 sm:gap-2.5">
               <div className="flex items-center justify-between px-1">
-                <label htmlFor="password" className="text-[10px] font-black text-zinc-700 uppercase tracking-wider sm:text-sm">
+                <label htmlFor="password" className="text-xs font-black text-zinc-700 uppercase tracking-wider sm:text-sm">
                   លេខសម្ងាត់ <span className="text-red-500">*</span>
                 </label>
-                <a href="#" className="text-[10px] font-black text-primary hover:underline sm:text-xs">ភ្លេចលេខសម្ងាត់?</a>
+                <a href="#" className="text-xs font-black text-[#3b6016] hover:underline">ភ្លេចលេខសម្ងាត់?</a>
               </div>
               <div className="relative group/field">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 transition-colors group-focus-within/field:text-primary sm:left-5">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300 transition-colors group-focus-within/field:text-[#3b6016] sm:left-5">
                   <IconHash className="size-5 sm:size-6" />
                 </div>
                 <input
@@ -257,11 +257,11 @@ export function LoginForm() {
                   type={showPassword ? "text" : "password"}
                   required
                   placeholder="••••••••"
-                  className="w-full rounded-xl border-2 border-zinc-100 bg-zinc-50/50 pl-12 pr-12 py-2.5 text-sm font-bold text-zinc-900 outline-none transition-all placeholder:text-zinc-300 focus:border-primary focus:bg-white focus:shadow-lg focus:shadow-primary/5 sm:rounded-2xl sm:pl-14 sm:pr-14 sm:py-4.5 sm:text-base"
+                  className="w-full rounded-xl border-2 border-zinc-100 bg-zinc-50/50 pl-12 pr-12 py-2.5 text-sm font-bold text-zinc-900 outline-none transition-all placeholder:text-zinc-300 focus:border-[#3b6016] focus:bg-white focus:shadow-lg focus:shadow-[#3b6016]/5 sm:rounded-2xl sm:pl-14 sm:pr-14 sm:py-4.5 sm:text-base"
                 />
                 <button
                   type="button"
-                  className="absolute right-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-xl text-zinc-300 transition-all hover:bg-zinc-50 hover:text-primary sm:right-3 sm:size-11"
+                  className="absolute right-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-xl text-zinc-300 transition-all hover:bg-zinc-50 hover:text-[#3b6016] sm:right-3 sm:size-11"
                   onClick={() => setShowPassword((v) => !v)}
                 >
                   {showPassword ? <IconEyeOff className="size-5 sm:size-6" /> : <IconEye className="size-5 sm:size-6" />}
@@ -273,11 +273,11 @@ export function LoginForm() {
           <div className="flex items-center gap-3 px-1">
             <label className="relative flex cursor-pointer items-center group">
               <input type="checkbox" name="remember" className="peer sr-only" />
-              <div className="size-6 rounded-lg border-2 border-zinc-200 transition-all peer-checked:border-primary peer-checked:bg-primary" />
-              <svg className="absolute left-1 top-1 size-4 text-white opacity-0 transition-opacity peer-checked:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <div className="size-6 rounded-lg border-2 border-zinc-200 transition-all peer-checked:border-[#3b6016] peer-checked:bg-[#3b6016] shadow-sm" />
+              <svg className="absolute left-1 top-1 size-4 text-white opacity-0 transition-opacity peer-checked:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
-              <span className="ml-3 text-sm font-bold text-zinc-500 select-none">ចងចាំខ្ញុំ</span>
+              <span className="ml-3 text-sm font-bold text-zinc-600 select-none group-hover:text-[#3b6016] transition-colors">ចងចាំខ្ញុំ</span>
             </label>
           </div>
 
@@ -285,7 +285,7 @@ export function LoginForm() {
             <button
               type="submit"
               disabled={isPending}
-              className="relative h-12 w-full flex items-center justify-center overflow-hidden rounded-xl bg-primary text-base font-black text-white shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100 sm:h-16 sm:rounded-2xl sm:text-lg"
+              className="relative h-12 w-full flex items-center justify-center overflow-hidden rounded-xl bg-[#3b6016] text-base font-black text-white shadow-xl shadow-[#3b6016]/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100 sm:h-16 sm:rounded-2xl sm:text-lg"
             >
               {isPending ? (
                 <span className="flex items-center gap-3">
@@ -299,7 +299,7 @@ export function LoginForm() {
 
             <p className="text-center text-xs font-bold text-zinc-400 sm:text-sm">
               មិនទាន់មានគណនី? 
-              <Link href="/register" className="ml-2 text-primary hover:underline">ចុះឈ្មោះឥឡូវនេះ</Link>
+              <Link href="/register" className="ml-2 text-[#3b6016] hover:underline">ចុះឈ្មោះឥឡូវនេះ</Link>
             </p>
           </div>
         </form>

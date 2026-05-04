@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { IconTruck, IconCreditCard, IconCheck, IconBooks, IconTrash, IconPlus, IconPen, IconOrders, IconUser, IconMapPin } from "../dashboard-icons";
+import { formatImageUrl } from "@/lib/utils";
 
 interface CheckoutModalProps {
   batchId: string;
@@ -143,7 +144,7 @@ export function CheckoutModal({ batchId, items, total, onSuccess, onCancel }: Ch
               <div key={idx} className="group relative flex items-center gap-4 rounded-xl border border-[#61452e]/10 bg-white p-3 transition-all hover:shadow-md">
                 <div className="size-20 shrink-0 overflow-hidden rounded-lg bg-[#61452e]/5">
                   {item.book_details?.image_url ? (
-                    <img src={item.book_details.image_url} alt="" className="h-full w-full object-cover" />
+                    <img src={formatImageUrl(item.book_details.image_url)} alt="" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-[#61452e]/20">
                       <IconBooks className="size-8" />

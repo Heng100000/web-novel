@@ -48,6 +48,8 @@ CORS_ALLOWED_ORIGINS = [
     "https://our-novel.com",
     "https://www.our-novel.com",
     "http://localhost:3000", # សម្រាប់តេស្ត Local
+    "http://127.0.0.1:3000",
+    "https://localhost:3000",
 ]
 # បើចង់ឱ្យ Mobile App ប្រើដែរ ត្រូវថែម settings នេះ
 CORS_ALLOW_METHODS = [

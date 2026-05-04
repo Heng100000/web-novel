@@ -38,8 +38,8 @@ export default function CategoriesPage() {
       ) : categories.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories.map((category) => (
-            <Link 
-              key={category.id} 
+            <Link
+              key={category.id}
               href={`/books?category=${category.id}`}
               className="group bg-white p-6 rounded-3xl border border-zinc-100 shadow-sm hover:shadow-xl hover:border-[#3b6016]/20 transition-all duration-300 flex items-center justify-between"
             >

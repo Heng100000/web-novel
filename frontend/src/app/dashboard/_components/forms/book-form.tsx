@@ -61,14 +61,23 @@ export function BookForm({ initialData, onSuccess, onCancel }: BookFormProps) {
   const [mainImageIdx, setMainImageIdx] = useState(initialData?.images?.findIndex(img => img.is_main === 1) ?? 0);
   const [isActive, setIsActive] = useState(initialData ? initialData.is_active === 1 : true);
   
-  // Custom Select States
+  // Ref for image replacement
+  const [replacingIdx, setReplacingIdx] = useState<{idx: number, type: 'new' | 'existing'} | null>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+
+  // Form States
   const [selectedAuthor, setSelectedAuthor] = useState<number | string>(initialData?.author || "");
   const [selectedCategory, setSelectedCategory] = useState<number | string>(initialData?.category || "");
-  const [selectedEdition, setSelectedEdition] = useState<string>(initialData?.edition_type || "Standard");
+  const [selectedEdition, setSelectedEdition] = useState<string[]>(
+    initialData?.edition_type 
+      ? initialData.edition_type.split(",").map(s => s.trim()) 
+      : ["Standard"]
+  );
   const [selectedEvent, setSelectedEvent] = useState<number | string>(initialData?.event_id || "");
-  
   const [price, setPrice] = useState<string>(initialData?.price || "");
   const [priceRiel, setPriceRiel] = useState<string>(initialData?.price_riel || "");
+  const [flashSaleQty, setFlashSaleQty] = useState<string | number>(initialData?.flash_sale_qty || "0");
+  const [itemsSold, setItemsSold] = useState<string | number>(initialData?.items_sold || "0");
 
   const handlePriceRielChange = (val: string) => {
     setPriceRiel(val);
@@ -120,6 +129,33 @@ export function BookForm({ initialData, onSuccess, onCancel }: BookFormProps) {
     }
   };
 
+  const handleReplaceImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0] && replacingIdx) {
+      const file = e.target.files[0];
+      const preview = URL.createObjectURL(file);
+      
+      if (replacingIdx.type === 'new') {
+        setImages(prev => {
+          const updated = [...prev];
+          URL.revokeObjectURL(updated[replacingIdx.idx].preview);
+          updated[replacingIdx.idx] = { file, preview };
+          return updated;
+        });
+      } else {
+        const newImg = { file, preview };
+        setImages(prev => [...prev, newImg]);
+        setExistingImages(prev => prev.filter((_, i) => i !== replacingIdx.idx));
+        setMainImageIdx(images.length + existingImages.length - 1); 
+      }
+      setReplacingIdx(null);
+    }
+  };
+
+  const triggerReplace = (idx: number, type: 'new' | 'existing') => {
+    setReplacingIdx({ idx, type });
+    setTimeout(() => replaceInputRef.current?.click(), 100);
+  };
+
   const removeImage = (index: number) => {
     setImages(prev => {
       const updated = prev.filter((_, i) => i !== index);
@@ -147,10 +183,14 @@ export function BookForm({ initialData, onSuccess, onCancel }: BookFormProps) {
     formData.append("description", nativeFormData.get("description") as string || "");
     formData.append("category", nativeFormData.get("category") as string);
     formData.append("author", nativeFormData.get("author") as string);
-    formData.append("edition_type", nativeFormData.get("edition_type") as string || "Standard");
+    formData.append("edition_type", selectedEdition.join(", "));
     formData.append("event_id", nativeFormData.get("event_id") as string || "");
+    formData.append("flash_sale_qty", flashSaleQty.toString());
+    formData.append("items_sold", itemsSold.toString());
     formData.append("is_active", isActive ? "1" : "0");
     formData.append("main_image_idx", mainImageIdx.toString());
+
+    formData.append("existing_images", JSON.stringify(existingImages.map(img => img.id)));
 
     images.forEach((img) => {
       formData.append("images", img.file);
@@ -183,6 +223,13 @@ export function BookForm({ initialData, onSuccess, onCancel }: BookFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="relative">
+      <input 
+        ref={replaceInputRef}
+        type="file" 
+        accept="image/*" 
+        className="hidden" 
+        onChange={handleReplaceImage} 
+      />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:items-start">
         {/* Left Column - Main Content */}
         <div className="flex flex-col gap-8 lg:col-span-2">
@@ -260,9 +307,11 @@ export function BookForm({ initialData, onSuccess, onCancel }: BookFormProps) {
                     <IconBooks className="size-4.5" />
                   </div>
                   <CustomSelect
+                    isMulti
                     options={[
                       { label: "ការបោះពុម្ពស្តង់ដារ (Standard)", value: "Standard" },
                       { label: "សៀវភៅមកថ្មី (New Arrival)", value: "New Arrival" },
+                      { label: "លក់ដាច់ជាងគេ (Best Seller)", value: "Best Seller" },
                       { label: "ការបោះពុម្ពពិសេស (Special)", value: "Special Edition" },
                       { label: "ការបោះពុម្ពមានកំណត់ (Limited)", value: "Limited Edition" },
                       { label: "បោះពុម្ពឡើងវិញ (Reprint)", value: "Reprint" },
@@ -270,7 +319,7 @@ export function BookForm({ initialData, onSuccess, onCancel }: BookFormProps) {
                     value={selectedEdition}
                     onChange={setSelectedEdition}
                   />
-                  <input type="hidden" name="edition_type" value={selectedEdition} />
+                  <input type="hidden" name="edition_type" value={selectedEdition.join(", ")} />
                 </div>
               </div>
 
@@ -455,6 +504,46 @@ export function BookForm({ initialData, onSuccess, onCancel }: BookFormProps) {
                 </div>
               </div>
             </div>
+
+            {/* Flash Sale Inventory Fields - Visible only when an event is selected */}
+            {selectedEvent && selectedEvent !== "" && (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 mt-6 p-4 rounded-2xl bg-primary/5 border border-primary/10 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex flex-col gap-2.5">
+                  <label htmlFor="flash_sale_qty" className="text-[13px] font-bold text-primary px-1 font-battambang">ស្តុកសម្រាប់ Flash Sale</label>
+                  <div className="relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 transition-colors group-focus-within:text-primary">
+                      <IconHash className="size-4.5" />
+                    </div>
+                    <input
+                      id="flash_sale_qty"
+                      name="flash_sale_qty"
+                      type="number"
+                      value={flashSaleQty}
+                      onChange={(e) => setFlashSaleQty(e.target.value)}
+                      className="input-standard input-with-icon border-primary/20 focus:border-primary focus:ring-primary/5"
+                    />
+                  </div>
+                  <p className="text-[10px] text-primary/60 px-1 font-battambang">ចំនួនសៀវភៅសរុបដែលចង់ដាក់លក់ក្នុង Flash Sale</p>
+                </div>
+                <div className="flex flex-col gap-2.5">
+                  <label htmlFor="items_sold" className="text-[13px] font-bold text-emerald-600 px-1 font-battambang">ចំនួនដែលលក់បាន (Sold)</label>
+                  <div className="relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600/40 transition-colors group-focus-within:text-emerald-600">
+                      <IconHash className="size-4.5" />
+                    </div>
+                    <input
+                      id="items_sold"
+                      name="items_sold"
+                      type="number"
+                      value={itemsSold}
+                      onChange={(e) => setItemsSold(e.target.value)}
+                      className="input-standard input-with-icon border-emerald-600/20 focus:border-emerald-600 focus:ring-emerald-600/5"
+                    />
+                  </div>
+                  <p className="text-[10px] text-emerald-600/60 px-1 font-battambang">ចំនួនសៀវភៅដែលលក់បានរួចហើយ</p>
+                </div>
+              </div>
+            )}
           </section>
         </div>
 
@@ -498,17 +587,21 @@ export function BookForm({ initialData, onSuccess, onCancel }: BookFormProps) {
               {existingImages.map((img, idx) => (
                 <div 
                   key={`existing-${img.id}`} 
-                  className={`group relative aspect-[3/4] overflow-hidden rounded-2xl border-2 transition-all ${
+                  onClick={() => triggerReplace(idx, 'existing')}
+                  className={`group relative aspect-[3/4] overflow-hidden rounded-2xl border-2 transition-all cursor-pointer hover:ring-2 hover:ring-primary/20 ${
                     mainImageIdx === idx ? "border-primary" : "border-grayborde/40"
                   }`}
                 >
-                  <img src={formatImageUrl(img.image_url)} alt="" className="h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 flex items-center justify-center">
-                    <span className="text-[10px] font-black text-white bg-black/20 px-2 py-1 rounded backdrop-blur-sm font-battambang">មានក្នុងស្តុក</span>
+                  <img src={formatImageUrl(img.image_url)} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-110 duration-500" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 flex flex-col items-center justify-center gap-2">
+                    <div className="size-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
+                      <IconPen className="size-4 text-white" />
+                    </div>
+                    <span className="text-[10px] font-black text-white font-battambang uppercase tracking-widest">ប្តូររូបភាព</span>
                   </div>
                   
                   {img.is_main === 1 && (
-                    <div className="absolute left-2 top-2 rounded bg-primary px-1.5 py-0.5 text-[8px] font-black text-white shadow-lg">
+                    <div className="absolute left-2 top-2 rounded bg-primary px-1.5 py-0.5 text-[8px] font-black text-white shadow-lg z-10">
                       គម្រប
                     </div>
                   )}
@@ -518,31 +611,43 @@ export function BookForm({ initialData, onSuccess, onCancel }: BookFormProps) {
               {images.map((img, idx) => (
                 <div 
                   key={`new-${idx}`} 
-                  className={`group relative aspect-[3/4] overflow-hidden rounded-2xl border-2 transition-all ${
+                  onClick={() => triggerReplace(idx, 'new')}
+                  className={`group relative aspect-[3/4] overflow-hidden rounded-2xl border-2 transition-all cursor-pointer hover:ring-2 hover:ring-primary/20 ${
                     mainImageIdx === (idx + existingImages.length) ? "border-primary" : "border-grayborde/40"
                   }`}
                 >
-                  <img src={img.preview} alt="" className="h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100" />
+                  <img src={img.preview} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-110 duration-500" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 flex flex-col items-center justify-center gap-2">
+                    <div className="size-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
+                      <IconPen className="size-4 text-white" />
+                    </div>
+                    <span className="text-[10px] font-black text-white font-battambang uppercase tracking-widest">ប្តូររូបភាព</span>
+                  </div>
                   
                   <button
                     type="button"
-                    onClick={() => removeImage(idx)}
-                    className="absolute right-2 top-2 flex size-6 items-center justify-center rounded-full bg-white/90 dark:bg-zinc-900/90 text-red-600 dark:text-red-400 shadow-sm opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white dark:hover:bg-zinc-800"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeImage(idx);
+                    }}
+                    className="absolute right-2 top-2 z-20 flex size-6 items-center justify-center rounded-full bg-white/90 dark:bg-zinc-900/90 text-red-600 dark:text-red-400 shadow-sm opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white dark:hover:bg-zinc-800"
                   >
                     <IconX className="size-3.5" />
                   </button>
                   
                   {(mainImageIdx === (idx + existingImages.length)) && (
-                    <div className="absolute left-2 top-2 rounded bg-primary px-1.5 py-0.5 text-[8px] font-black text-white">
+                    <div className="absolute left-2 top-2 rounded bg-primary px-1.5 py-0.5 text-[8px] font-black text-white z-10">
                       គម្របថ្មី
                     </div>
                   )}
 
                   <button
                     type="button"
-                    onClick={() => setMainImageIdx(idx + existingImages.length)}
-                    className={`absolute bottom-2 left-2 right-2 rounded-lg py-1.5 text-[9px] font-bold transition-all ${
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMainImageIdx(idx + existingImages.length);
+                    }}
+                    className={`absolute bottom-2 left-2 right-2 z-20 rounded-lg py-1.5 text-[9px] font-bold transition-all ${
                       mainImageIdx === (idx + existingImages.length) 
                         ? "bg-primary text-white" 
                         : "bg-white/90 dark:bg-zinc-800/90 text-text-main opacity-0 group-hover:opacity-100 hover:bg-white dark:hover:bg-zinc-700"

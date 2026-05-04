@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { 
-  Trash2, 
-  Minus, 
-  Plus, 
-  ShoppingCart, 
-  ArrowRight, 
+import {
+  Trash2,
+  Minus,
+  Plus,
+  ShoppingCart,
+  ArrowRight,
   ChevronLeft,
   Loader2,
   PackageOpen
@@ -51,7 +51,7 @@ export default function CartClient() {
     try {
       setIsUpdating(itemId);
       await cartApi.updateItem(itemId, newQty);
-      setItems(prev => prev.map(item => 
+      setItems(prev => prev.map(item =>
         item.id === itemId ? { ...item, quantity: newQty } : item
       ));
     } catch (error) {
@@ -102,8 +102,8 @@ export default function CartClient() {
               <ShoppingCart className="size-8" />
               កន្ត្រកទំនិញ
             </h1>
-            <Link 
-              href="/books" 
+            <Link
+              href="/books"
               className="flex items-center gap-2 text-sm font-bold text-zinc-500 hover:text-[#3b6016] transition-colors"
             >
               <ChevronLeft className="size-4" />
@@ -112,7 +112,7 @@ export default function CartClient() {
           </div>
 
           {items.length === 0 ? (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-white rounded-3xl p-12 text-center shadow-sm border border-zinc-100"
@@ -122,7 +122,7 @@ export default function CartClient() {
               </div>
               <h2 className="text-xl font-black text-zinc-800 mb-2 font-khmer">កន្ត្រករបស់អ្នកទំនេរ</h2>
               <p className="text-zinc-500 font-bold mb-8">អ្នកមិនទាន់មានសៀវភៅនៅក្នុងកន្ត្រកនៅឡើយទេ។</p>
-              <Link 
+              <Link
                 href="/books"
                 className="inline-flex items-center gap-3 rounded-full bg-[#3b6016] px-8 py-3.5 text-[15px] font-black text-white shadow-xl shadow-[#3b6016]/20 hover:opacity-90 transition-all active:scale-95"
               >
@@ -136,7 +136,7 @@ export default function CartClient() {
               <div className="lg:col-span-2 flex flex-col gap-4">
                 <AnimatePresence mode="popLayout">
                   {items.map((item) => (
-                    <motion.div 
+                    <motion.div
                       key={item.id}
                       layout
                       initial={{ opacity: 0, x: -20 }}
@@ -146,8 +146,8 @@ export default function CartClient() {
                     >
                       {/* Book Image */}
                       <div className="size-24 sm:size-32 shrink-0 rounded-xl overflow-hidden bg-zinc-50 border border-zinc-100">
-                        <img 
-                          src={getMediaUrl(item.book_details?.image_url) || "/images/placeholder_book.png"} 
+                        <img
+                          src={getMediaUrl(item.book_details?.image_url) || "/images/placeholder_book.png"}
                           alt={item.book_details?.title}
                           className="w-full h-full object-cover transition-transform group-hover:scale-105"
                         />
@@ -159,7 +159,7 @@ export default function CartClient() {
                           <h3 className="text-[15px] sm:text-[18px] font-black text-[#3b6016] font-khmer line-clamp-1">
                             {item.book_details?.title}
                           </h3>
-                          <button 
+                          <button
                             onClick={() => handleRemoveItem(item.id)}
                             disabled={isUpdating === item.id}
                             className="p-2 text-zinc-300 hover:text-red-500 transition-colors"
@@ -167,7 +167,7 @@ export default function CartClient() {
                             <Trash2 className="size-5" />
                           </button>
                         </div>
-                        
+
                         <p className="text-[12px] sm:text-[14px] font-bold text-zinc-400 mb-auto">
                           {item.book_details?.author_name || "អ្នកនិពន្ធមិនស្គាល់"}
                         </p>
@@ -175,7 +175,7 @@ export default function CartClient() {
                         <div className="flex items-center justify-between mt-4">
                           {/* Qty Controls */}
                           <div className="flex items-center gap-1 bg-zinc-50 rounded-lg p-1 border border-zinc-100">
-                            <button 
+                            <button
                               onClick={() => handleUpdateQuantity(item.id, item.quantity, -1)}
                               disabled={item.quantity <= 1 || isUpdating === item.id}
                               className="size-8 flex items-center justify-center rounded-md hover:bg-white hover:shadow-sm transition-all disabled:opacity-30"
@@ -185,7 +185,7 @@ export default function CartClient() {
                             <span className="w-8 text-center text-sm font-black text-zinc-700">
                               {isUpdating === item.id ? <Loader2 className="size-3 animate-spin mx-auto" /> : item.quantity}
                             </span>
-                            <button 
+                            <button
                               onClick={() => handleUpdateQuantity(item.id, item.quantity, 1)}
                               disabled={isUpdating === item.id}
                               className="size-8 flex items-center justify-center rounded-md hover:bg-white hover:shadow-sm transition-all"
@@ -218,7 +218,7 @@ export default function CartClient() {
                   <h2 className="text-xl font-black text-zinc-800 mb-6 font-khmer border-b border-zinc-50 pb-4">
                     សេចក្តីសង្ខេប
                   </h2>
-                  
+
                   <div className="flex flex-col gap-4 mb-6">
                     <div className="flex justify-between items-center text-zinc-500 font-bold">
                       <span>ចំនួនសរុប</span>
@@ -242,7 +242,7 @@ export default function CartClient() {
                     <p className="text-[10px] font-bold text-zinc-400">រួមបញ្ចូលពន្ធ និងសេវាផ្សេងៗរួចរាល់</p>
                   </div>
 
-                  <Link 
+                  <Link
                     href="/checkout"
                     className="flex items-center justify-center gap-3 w-full rounded-full bg-[#3b6016] py-4 text-[16px] font-black text-white shadow-xl shadow-[#3b6016]/20 hover:opacity-90 transition-all active:scale-95"
                   >

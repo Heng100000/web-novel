@@ -85,8 +85,9 @@ class Books(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     price_riel = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True, default=0)
     stock_qty = models.IntegerField(blank=True, null=True)
-    edition_type = models.CharField(max_length=15, blank=True, null=True)
+    edition_type = models.CharField(max_length=100, blank=True, null=True)
     is_active = models.IntegerField(blank=True, null=True)
+    views_count = models.IntegerField(default=0)
 
     class Meta:
         managed = False
@@ -115,30 +116,28 @@ class Events(models.Model):
     end_date = models.DateTimeField()
     show_in_banner = models.IntegerField(blank=True, null=True)
     show_in_homepage = models.IntegerField(blank=True, null=True)
-    banner_url = models.ImageField(upload_to='events/', blank=True, null=True)
-    status = models.CharField(max_length=8, blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True)
+    banner_url = models.CharField(max_length=500, blank=True, null=True)
+    status = models.CharField(max_length=8, blank=True, null=True) # Active, Inactive
+    event_type = models.CharField(max_length=20, default='Promotion') # Promotion, FlashSale
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'events'
 
     def __str__(self):
         return self.title
 
 class EventBooks(models.Model):
-    event = models.ForeignKey(Events, models.DO_NOTHING)
-    book = models.ForeignKey(Books, models.DO_NOTHING)
+    event = models.ForeignKey(Events, on_delete=models.CASCADE, related_name='event_books')
+    book = models.ForeignKey(Books, on_delete=models.CASCADE, related_name='event_books')
+    flash_sale_qty = models.IntegerField(default=0) # Total quantity assigned for this flash sale
+    items_sold = models.IntegerField(default=0) # Real-time sold counter
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'event_books'
-        # Composite PK or just use ID if it exists? 
-        # Junction tables often don't have an 'id' but inspectdb showed it exists as a composite.
-        # For Django models without pk, we usually set primary_key=True on one of them if there's no id.
-        # But if the table exists, Django usually needs a PK.
-        # I'll add an 'id' field if it exists or just make one a PK.
-        # Actually, let's just use the default 'id' field since most junction tables have one either way.
+        unique_together = ('event', 'book')
 
 class Users(AbstractBaseUser):
     id = models.AutoField(primary_key=True)
@@ -151,6 +150,7 @@ class Users(AbstractBaseUser):
     failed_login_attempts = models.IntegerField(default=0)
     locked_until = models.DateTimeField(blank=True, null=True)
     reward_points = models.IntegerField(default=0)
+    avatar_url = models.ImageField(upload_to='profile_images/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
 
     objects = UsersManager()
@@ -270,6 +270,7 @@ class Orders(models.Model):
     shipping_address = models.TextField()
     shipping_method = models.CharField(max_length=50, default='Pick Up')
     notes = models.TextField(blank=True, null=True)
+    batch_id = models.CharField(max_length=50, blank=True, null=True) # To clear cart after payment
 
     class Meta:
         managed = True
@@ -311,6 +312,7 @@ class Payments(models.Model):
     payment_status = models.CharField(max_length=15, default='Pending') # Pending, Completed, Failed
     payment_date = models.DateTimeField(blank=True, null=True)
     aba_hash = models.TextField(blank=True, null=True) # Store the hash sent to ABA
+    receipt_image = models.ImageField(upload_to='receipts/', blank=True, null=True)
     raw_response = models.JSONField(blank=True, null=True) # Store full response from ABA callback
 
     class Meta:
@@ -353,3 +355,30 @@ class Notification(models.Model):
 
     def __str__(self):
         return self.title
+
+class Favorite(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='favorites')
+    book = models.ForeignKey(Books, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        managed = True
+        db_table = 'favorites'
+        unique_together = ('user', 'book')
+        verbose_name_plural = "Favorites"
+
+    def __str__(self):
+        return f"{self.user.email} likes {self.book.title}"
+
+class SiteStats(models.Model):
+    date = models.DateField(auto_now_add=True, unique=True)
+    total_visits = models.PositiveIntegerField(default=0)
+    
+    class Meta:
+        managed = True
+        db_table = 'site_stats'
+        verbose_name_plural = "Site Statistics"
+
+    def __str__(self):
+        return f"{self.date}: {self.total_visits} visits"

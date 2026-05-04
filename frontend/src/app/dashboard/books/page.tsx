@@ -1,7 +1,7 @@
 "use client";
 
 import { ResourceTable } from "../_components/resource-table";
-import { IconBooks, IconOrders } from "../dashboard-icons";
+import { IconBooks, IconOrders, IconEye } from "../dashboard-icons";
 import { formatImageUrl } from "@/lib/utils";
 
 export default function BooksPage() {
@@ -95,6 +95,15 @@ export default function BooksPage() {
               <span className={`font-bold ${book.stock_qty < 10 ? "text-red-500" : "text-text-dim"}`}>
                 {book.stock_qty} <span className="text-[10px] font-medium text-text-dim/60 font-battambang">ច្បាប់</span>
               </span>
+            </div>
+          ) 
+        },
+        { 
+          header: "ការចូលមើល", 
+          accessor: (book: any) => (
+            <div className="flex items-center gap-1.5 text-primary">
+              <IconEye className="size-3.5" />
+              <span className="text-sm font-black tracking-tight">{(book.views_count || 0).toLocaleString()}</span>
             </div>
           ) 
         },

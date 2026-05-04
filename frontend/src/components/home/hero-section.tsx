@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { IconBooks } from "@/app/dashboard/dashboard-icons";
+import { useLanguage } from "@/lib/language-context";
 
 export default function HeroSection() {
   const [isMounted, setIsMounted] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     setIsMounted(true);
@@ -59,16 +61,15 @@ export default function HeroSection() {
       <div className="container relative z-10 mx-auto flex min-h-[80dvh] flex-col items-center justify-center px-4 text-center lg:min-h-screen">
         <div className="flex max-w-4xl flex-col gap-6 sm:gap-10 animate-in fade-in slide-in-from-bottom-8 duration-1000">
           <div className="flex flex-col gap-2">
-             <span className="text-xs font-black uppercase text-primary sm:text-sm">ស្វាគមន៍មកកាន់ពិភពនៃសៀវភៅ</span>
+             <span className="text-xs font-black uppercase text-primary sm:text-sm">{t("hero_welcome")}</span>
              <h1 className="text-4xl font-black leading-[1.1] text-white sm:text-6xl lg:text-8xl">
-                អានឱ្យកាន់តែច្រើន <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-400 to-primary">យល់ឱ្យកាន់តែច្បាស់</span>
+                {t("hero_title_1")} <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-400 to-primary">{t("hero_title_2")}</span>
              </h1>
           </div>
           
           <p className="mx-auto max-w-2xl text-base font-bold leading-relaxed text-zinc-400 sm:text-xl">
-             ស្វែងយល់ពីបណ្តុំសៀវភៅ និងប្រលោមលោកដ៏សម្បូរបែបដែលនឹងផ្លាស់ប្តូរទស្សនវិស័យរបស់អ្នក។ 
-             ចាប់ផ្តើមដំណើរការអានដ៏អស្ចារ្យរបស់អ្នកជាមួយយើងនៅថ្ងៃនេះ។
+             {t("hero_desc")}
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
@@ -76,14 +77,14 @@ export default function HeroSection() {
                 href="/books" 
                 className="group relative flex h-14 w-full items-center justify-center overflow-hidden rounded-2xl bg-primary px-8 text-sm font-black text-white transition-all hover:bg-primary/90 active:scale-95 sm:w-auto sm:text-base"
              >
-                ស្វែងរកសៀវភៅឥឡូវនេះ
+                {t("find_books_now")}
                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
              </Link>
              <Link 
                 href="/authors" 
                 className="flex h-14 w-full items-center justify-center rounded-2xl border-2 border-zinc-700 bg-transparent px-8 text-sm font-black text-white transition-all hover:bg-zinc-800 hover:border-zinc-600 active:scale-95 sm:w-auto sm:text-base"
              >
-                ជួបជាមួយអ្នកនិពន្ធ
+                {t("meet_authors")}
              </Link>
           </div>
         </div>
@@ -91,7 +92,7 @@ export default function HeroSection() {
         {/* Scroll Indicator */}
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce text-zinc-500 opacity-50">
            <div className="flex flex-col items-center gap-2">
-              <span className="text-[10px] font-bold uppercase">អូសចុះក្រោម</span>
+              <span className="text-[10px] font-bold uppercase">{t("scroll_down")}</span>
               <div className="h-10 w-px bg-gradient-to-b from-zinc-500 to-transparent" />
            </div>
         </div>

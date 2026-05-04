@@ -9,19 +9,22 @@ from datetime import timedelta
 from django.utils import timezone
 from django.conf import settings
 from django.db import connection, transaction, models
+from django.db.models import F, Sum
 from django.http import JsonResponse
 from rest_framework import viewsets, status, filters, permissions, response, views as drf_views
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 from .models import (
     Books, BookImages, Authors, Categories, Events, EventBooks, AddToCart, 
     Orders, OrderItems, Payments, Invoices, Users, Role, RolePermission,
-    Coupon, UserCoupon, CouponUsage, UserOTP
+    Coupon, UserCoupon, CouponUsage, UserOTP, Favorite
 )
 from .serializers import (
     BookSerializer, AuthorSerializer, CategorySerializer, 
@@ -29,7 +32,8 @@ from .serializers import (
     OrderSerializer, OrderItemSerializer, PaymentSerializer, UserSerializer,
     RegisterSerializer,
     RoleSerializer, RolePermissionSerializer,
-    CouponSerializer, UserCouponSerializer, CouponUsageSerializer, NotificationSerializer
+    CouponSerializer, UserCouponSerializer, CouponUsageSerializer, NotificationSerializer,
+    FavoriteSerializer
 )
 from .permissions import HasGranularPermission
 from .models import Notification
@@ -80,13 +84,45 @@ def ensure_user_schema():
             except Exception as e:
                 print(f"Error adding {column_name}: {e}")
 
-        # Ensure required columns exist
+# Ensure required columns exist
         add_column_if_missing('created_at', 'DATETIME' if 'sqlite' in db_engine else 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
         add_column_if_missing('failed_login_attempts', 'INTEGER DEFAULT 0')
         add_column_if_missing('locked_until', 'DATETIME NULL')
+        add_column_if_missing('reward_points', 'INTEGER DEFAULT 0')
+
+def ensure_books_schema():
+    """Ensures edition_type column in 'books' table is long enough"""
+    from django.db import connection
+    with connection.cursor() as cursor:
+        db_engine = settings.DATABASES['default']['ENGINE']
+        try:
+            if 'sqlite' in db_engine:
+                # SQLite doesn't support easy ALTER COLUMN, but let's hope it's not needed for string length
+                pass
+            else:
+                # MySQL/Postgres
+                cursor.execute("ALTER TABLE books MODIFY COLUMN edition_type VARCHAR(100)")
+                cursor.execute("ALTER TABLE books MODIFY COLUMN isbn VARCHAR(50) NULL")
+        except Exception as e:
+            print(f"Error updating books schema: {e}")
+
+def ensure_events_schema():
+    """Ensures banner_url column in 'events' table is long enough"""
+    from django.db import connection
+    with connection.cursor() as cursor:
+        db_engine = settings.DATABASES['default']['ENGINE']
+        try:
+            if 'sqlite' in db_engine:
+                pass
+            else:
+                cursor.execute("ALTER TABLE events MODIFY COLUMN banner_url VARCHAR(500)")
+        except Exception as e:
+            print(f"Error updating banner_url length: {e}")
 
 # Run immediately when views are loaded
-# ensure_user_schema()
+ensure_user_schema()
+# ensure_books_schema()
+# ensure_events_schema()
 
 def health(request):
     return JsonResponse({"status": "ok"})
@@ -101,13 +137,66 @@ class BookViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'isbn', 'author__name', 'author__name_km', 'category__name', 'category__name_km', 'description']
 
+    def list(self, request, *args, **kwargs):
+        try:
+            return super().list(request, *args, **kwargs)
+        except Exception as e:
+            import traceback
+            return Response({
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        # Atomic increment to avoid race conditions
+        Books.objects.filter(id=instance.id).update(views_count=F('views_count') + 1)
+        instance.refresh_from_db()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def best_sellers(self, request):
+        """Dynamic Top 5 Best Sellers based on actual sales volume."""
+        from django.db.models import Sum
+        import random
+        
+        # 1. Get Top 10 books based on total quantity sold
+        top_books_ids = OrderItems.objects.values('book')\
+            .annotate(total_sold=Sum('quantity'))\
+            .order_by('-total_sold')[:10]
+        
+        ids = [item['book'] for item in top_books_ids]
+        
+        if not ids:
+            # Fallback to Top 5 by views if no sales yet
+            queryset = Books.objects.all().order_by('-views_count')[:5]
+        else:
+            # 2. Fetch the books
+            top_books_queryset = Books.objects.filter(id__in=ids)
+            
+            # 3. Dynamic Random Top 5 from the Top 10
+            all_top_books = list(top_books_queryset)
+            if len(all_top_books) > 5:
+                random_top_5 = random.sample(all_top_books, 5)
+            else:
+                random_top_5 = all_top_books
+            
+            queryset = random_top_5
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     def get_queryset(self):
         queryset = Books.objects.all()
         
-        # Filter by category
-        category_id = self.request.query_params.get('category')
-        if category_id:
-            queryset = queryset.filter(category_id=category_id)
+        # Filter by category (ID or Slug)
+        category_param = self.request.query_params.get('category')
+        if category_param:
+            if str(category_param).isdigit():
+                queryset = queryset.filter(category_id=category_param)
+            else:
+                queryset = queryset.filter(category__slug=category_param)
             
         # Filter by price range
         min_price = self.request.query_params.get('min_price')
@@ -118,22 +207,32 @@ class BookViewSet(viewsets.ModelViewSet):
         if max_price:
             queryset = queryset.filter(price__lte=max_price)
             
-        # Optional: Filter by author
+        # Filter by author
         author_id = self.request.query_params.get('author')
         if author_id:
             queryset = queryset.filter(author_id=author_id)
             
+        # Filter by edition type
+        edition_type = self.request.query_params.get('edition_type')
+        if edition_type:
+            queryset = queryset.filter(edition_type__icontains=edition_type)
+            
         # Filter by discount status
-        has_discount = self.request.query_params.get('has_discount')
+        has_discount = self.request.query_params.get('has_discount') or self.request.query_params.get('on_sale')
         if has_discount == 'true':
             from django.utils import timezone
             now = timezone.now()
             # Find books that have an active event associated with them via EventBooks
             queryset = queryset.filter(
-                eventbooks__event__status='Active',
-                eventbooks__event__start_date__lte=now,
-                eventbooks__event__end_date__gte=now
+                event_books__event__status='Active',
+                event_books__event__start_date__lte=now,
+                event_books__event__end_date__gte=now
             ).distinct()
+            
+        # Support ordering
+        ordering = self.request.query_params.get('ordering')
+        if ordering:
+            queryset = queryset.order_by(ordering)
             
         return queryset
 
@@ -143,6 +242,7 @@ class BookViewSet(viewsets.ModelViewSet):
             book_data = {
                 'title': request.data.get('title'),
                 'price': request.data.get('price'),
+                'price_riel': request.data.get('price_riel'),
                 'isbn': request.data.get('isbn'),
                 'stock_qty': request.data.get('stock_qty'),
                 'description': request.data.get('description'),
@@ -173,14 +273,22 @@ class BookViewSet(viewsets.ModelViewSet):
                         is_main=1 if idx == main_image_idx else 0
                     )
 
-            # 4. Handle Event Association (Using Raw SQL to handle composite PK)
+            # 4. Handle Event Association
             event_id = request.data.get('event_id')
             if event_id and event_id != "" and event_id != "null":
-                with connection.cursor() as cursor:
-                    cursor.execute(
-                        "INSERT INTO event_books (event_id, book_id) VALUES (%s, %s)",
-                        [event_id, book.id]
-                    )
+                # Use ORM now that EventBooks is managed
+                from .models import EventBooks
+                flash_sale_qty = request.data.get('flash_sale_qty', 0)
+                items_sold = request.data.get('items_sold', 0)
+                
+                EventBooks.objects.update_or_create(
+                    book=book,
+                    defaults={
+                        'event_id': event_id, 
+                        'flash_sale_qty': flash_sale_qty if flash_sale_qty != "" else 0, 
+                        'items_sold': items_sold if items_sold != "" else 0
+                    }
+                )
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except Exception as e:
@@ -190,35 +298,85 @@ class BookViewSet(viewsets.ModelViewSet):
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
         
-        # 1. Prepare data for serializer
+        # 1. Prepare and clean data for serializer
         data = request.data.copy()
+        
+        # Ensure FK fields are not empty strings
+        for field in ['category', 'author']:
+            if field in data and (data[field] == "" or data[field] == "null"):
+                data[field] = None
+
         serializer = self.get_serializer(instance, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        # 2. Add New Images (optional during edit)
+        # 2. Sync Existing Images
+        existing_images_raw = request.data.get('existing_images')
+        if existing_images_raw:
+            try:
+                if isinstance(existing_images_raw, str):
+                    existing_images_ids = json.loads(existing_images_raw)
+                else:
+                    existing_images_ids = existing_images_raw
+                
+                if isinstance(existing_images_ids, list):
+                    BookImages.objects.filter(book=instance).exclude(id__in=existing_images_ids).delete()
+            except Exception as e:
+                print(f"DEBUG SYNC ERROR: {str(e)}")
+
+        # 3. Add New Images
         images = request.FILES.getlist('images')
         if images:
             for image_file in images:
-                # Assign the file object directly for automatic S3 upload
                 BookImages.objects.create(
                     book=instance,
                     image_url=image_file,
-                    is_main=0 # Default to 0 for new non-primary images
+                    is_main=0
                 )
 
-        # 3. Handle Event Association (Using Raw SQL to handle composite PK)
+        # 4. Update Main Image Status
+        main_image_idx_raw = request.data.get('main_image_idx')
+        if main_image_idx_raw is not None and str(main_image_idx_raw) != "":
+            try:
+                main_image_idx = int(main_image_idx_raw)
+                # Reset all current images to not-main
+                BookImages.objects.filter(book=instance).update(is_main=0)
+                
+                # Fetch all current images for this book (existing + newly added)
+                # We sort them by ID to maintain a consistent order
+                all_images = list(BookImages.objects.filter(book=instance).order_by('id'))
+                
+                # Set the selected one to main based on the index provided by frontend
+                if 0 <= main_image_idx < len(all_images):
+                    target_img = all_images[main_image_idx]
+                    target_img.is_main = 1
+                    target_img.save()
+            except (ValueError, TypeError) as e:
+                print(f"DEBUG MAIN IMAGE ERROR: {str(e)}")
+
+        # 5. Handle Event Association
         if 'event_id' in data:
             event_id = data.get('event_id')
-            with connection.cursor() as cursor:
-                # Clear existing associations for this book
-                cursor.execute("DELETE FROM event_books WHERE book_id = %s", [instance.id])
-                
-                if event_id and event_id != "" and event_id != "null":
-                    cursor.execute(
-                        "INSERT INTO event_books (event_id, book_id) VALUES (%s, %s)",
-                        [event_id, instance.id]
+            try:
+                from .models import EventBooks
+                if event_id and event_id != "" and str(event_id) != "null":
+                    flash_sale_qty = data.get('flash_sale_qty')
+                    items_sold = data.get('items_sold')
+                    
+                    defaults = {'event_id': event_id}
+                    if flash_sale_qty is not None: defaults['flash_sale_qty'] = flash_sale_qty
+                    if items_sold is not None: defaults['items_sold'] = items_sold
+                    
+                    # Use update_or_create to manage the link efficiently
+                    EventBooks.objects.update_or_create(
+                        book=instance,
+                        defaults=defaults
                     )
+                else:
+                    # If event_id is empty/null, remove the association
+                    EventBooks.objects.filter(book=instance).delete()
+            except Exception as e:
+                print(f"DEBUG EVENT ERROR: {str(e)}")
 
         return Response(serializer.data)
 
@@ -299,6 +457,16 @@ class CategoryViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'name_km']
 
+    def list(self, request, *args, **kwargs):
+        try:
+            return super().list(request, *args, **kwargs)
+        except Exception as e:
+            import traceback
+            return Response({
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class EventViewSet(viewsets.ModelViewSet):
     queryset = Events.objects.all()
@@ -314,10 +482,28 @@ class AddToCartViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     resource_name = 'cart'
     serializer_class = AddToCartSerializer
+    
+    serializer_class = AddToCartSerializer
 
     def get_queryset(self):
-        # Only show entries belonging to the current user
-        return AddToCart.objects.filter(user=self.request.user).order_by('-created_at')
+        try:
+            user = self.request.user
+            user_role = str(user.role.name if user.role else "").lower()
+            
+            # Base queryset with optimizations
+            queryset = AddToCart.objects.select_related('book', 'book__author', 'book__category', 'user')\
+                .prefetch_related('book__bookimages_set')
+            
+            # If Admin, show all entries. If not, show only user's own entries.
+            if user_role != 'admin':
+                queryset = queryset.filter(user=user)
+                
+            return queryset.order_by('-created_at')
+        except Exception as e:
+            import traceback
+            with open('debug_cart_error.log', 'a', encoding='utf-8') as f:
+                f.write(f"GET_QUERYSET ERROR: {str(e)}\n{traceback.format_exc()}\n")
+            raise e
 
     def create(self, request, *args, **kwargs):
         # 1. Handle "Repeater" format: items = [{"book": id, "quantity": qty}, ...]
@@ -349,7 +535,7 @@ class AddToCartViewSet(viewsets.ModelViewSet):
             quantity = item.get('quantity', 1)
             if not book_id: continue
             
-            # Stock check
+            # Stock check (Just verification, no deduction)
             try:
                 book = Books.objects.get(id=book_id)
                 if book.stock_qty is not None and quantity > book.stock_qty:
@@ -360,10 +546,7 @@ class AddToCartViewSet(viewsets.ModelViewSet):
             except Books.DoesNotExist:
                 continue
 
-            # Create or update entry? The user said "product ដែលពួកគេបាន add ត្រូវរក្សាទុកក្នុង record តែមួយដូចគ្នា"
-            # If the same book is added again today, we could just increase quantity, 
-            # but to stay safe with the "record" requirement, we'll keep it simple for now or merge.
-            # Merging is better:
+            # Create or update entry
             entry, created = AddToCart.objects.get_or_create(
                 user=request.user, 
                 book_id=book_id, 
@@ -378,19 +561,26 @@ class AddToCartViewSet(viewsets.ModelViewSet):
 
         return Response(created_entries, status=status.HTTP_201_CREATED)
 
+    def destroy(self, request, *args, **kwargs):
+        """No stock restoration needed as no stock was deducted at cart stage."""
+        return super().destroy(request, *args, **kwargs)
+
 
 class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [HasGranularPermission]
     resource_name = 'orders'
     serializer_class = OrderSerializer
+    parser_classes = (JSONParser, MultiPartParser, FormParser)
     filter_backends = [filters.SearchFilter]
     search_fields = ['id', 'user__email', 'user__full_name', 'status', 'shipping_address']
 
     def get_queryset(self):
         user_role = str(self.request.user.role or "").lower()
+        base_qs = Orders.objects.all().select_related('payment', 'invoice', 'user').prefetch_related('items__book')
+        
         if user_role == 'admin':
-            return Orders.objects.all().order_by('-order_date')
-        return Orders.objects.filter(user=self.request.user).order_by('-order_date')
+            return base_qs.order_by('-order_date')
+        return base_qs.filter(user=self.request.user).order_by('-order_date')
 
     def create(self, request, *args, **kwargs):
         return self.checkout(request)
@@ -413,11 +603,33 @@ class OrderViewSet(viewsets.ModelViewSet):
                     payment = order.payment
                     payment.payment_status = 'Completed'
                     payment.payment_date = timezone.now()
+                    
+                    # Handle manual receipt upload
+                    receipt_file = request.FILES.get('receipt_image')
+                    if receipt_file:
+                        payment.receipt_image = receipt_file
+                        payment.payment_method = 'Manual Transfer'
+                        
                     payment.save()
                 else:
                     raise Exception("Payment record missing for this order.")
 
-                # 2. Generate Invoice
+                # 2. Update Flash Sale 'items_sold' tracking
+                from .models import EventBooks
+                for item in order.items.all():
+                    # Check if this book is part of an active Flash Sale event
+                    active_flash_sale = EventBooks.objects.filter(
+                        book=item.book,
+                        event__event_type='FlashSale',
+                        event__status='Active'
+                    ).first()
+                    
+                    if active_flash_sale:
+                        # Increment items_sold
+                        active_flash_sale.items_sold += item.quantity
+                        active_flash_sale.save()
+
+                # 3. Generate Invoice
                 invoice_no = f"INV-{timezone.now().strftime('%Y%m%d')}-{order.id:04d}"
                 Invoices.objects.create(
                     invoice_no=invoice_no,
@@ -427,6 +639,10 @@ class OrderViewSet(viewsets.ModelViewSet):
                     subtotal=order.total_amount, # Simplifying: subtotal = total for now
                     total_amount=order.total_amount
                 )
+                
+                # 4. Clear cart items associated with this order's batch
+                if order.batch_id:
+                    AddToCart.objects.filter(user=order.user, batch_id=order.batch_id).delete()
                 
                 return Response(OrderSerializer(order).data)
         except Exception as e:
@@ -448,19 +664,29 @@ class OrderViewSet(viewsets.ModelViewSet):
                 
             from django.db import transaction
             with transaction.atomic():
+                # Only restore stock if it was actually deducted
+                # Deducted if: (not ABA) OR (is ABA AND payment is already Completed)
+                was_deducted = False
+                if hasattr(order, 'payment'):
+                    if order.payment.payment_method != "ABA Bank" or order.payment.payment_status == "Completed":
+                        was_deducted = True
+                
                 order.status = 'Cancelled'
                 order.save()
                 
-                # Restore Stock
-                for item in order.items.all():
-                    book = item.book
-                    if book.stock_qty is not None:
-                        book.stock_qty += item.quantity
-                        book.save()
+                if was_deducted:
+                    # Restore Stock
+                    for item in order.items.all():
+                        book = item.book
+                        if book.stock_qty is not None:
+                            book.stock_qty += item.quantity
+                            book.save()
                         
                 # Update payment status
                 if hasattr(order, 'payment'):
-                    order.payment.payment_status = 'Failed' # Or 'Cancelled'
+                    # Only change if not already completed
+                    if order.payment.payment_status != 'Completed':
+                        order.payment.payment_status = 'Failed'
                     order.payment.save()
                     
             return Response(OrderSerializer(order).data)
@@ -477,9 +703,9 @@ class OrderViewSet(viewsets.ModelViewSet):
         from datetime import timedelta
         today = timezone.now().date()
         
-        total_revenue = Orders.objects.filter(status='Completed').aggregate(total=Sum('total_amount'))['total'] or 0
+        total_revenue = Orders.objects.filter(status__in=['Completed', 'Processing']).aggregate(total=Sum('total_amount'))['total'] or 0
         today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        today_revenue = Orders.objects.filter(status='Completed', order_date__gte=today_start).aggregate(total=Sum('total_amount'))['total'] or 0
+        today_revenue = Orders.objects.filter(status__in=['Completed', 'Processing'], order_date__gte=today_start).aggregate(total=Sum('total_amount'))['total'] or 0
         pending_orders = Orders.objects.filter(status='Pending').count()
         
         # 4. Invoice specific stats
@@ -490,14 +716,14 @@ class OrderViewSet(viewsets.ModelViewSet):
         total_customers = Users.objects.exclude(role__name__iexact='Admin').count()
         
         # 6. Calculate Dynamic Growth (Last 7 days vs Previous 7 days)
-        revenue_growth = self._calculate_growth(Orders.objects.filter(status='Completed'), 'order_date', 'total_amount')
+        revenue_growth = self._calculate_growth(Orders.objects.filter(status__in=['Completed', 'Processing']), 'order_date', 'total_amount')
         invoice_growth = self._calculate_growth(Invoices.objects.all(), 'created_at')
         customer_growth = self._calculate_growth(Users.objects.exclude(role__name__iexact='Admin'), 'created_at')
         unpaid_growth = self._calculate_growth(Orders.objects.filter(status='Pending'), 'order_date')
 
         # 7. Chart Data: Invoice Stats (Paid, Overdue, Unpaid)
         seven_days_ago = timezone.now() - timedelta(days=7)
-        paid_count = Orders.objects.filter(status='Completed').count()
+        paid_count = Orders.objects.filter(status__in=['Completed', 'Processing']).count()
         overdue_count = Orders.objects.filter(status='Pending', order_date__lt=seven_days_ago).count()
         unpaid_count = Orders.objects.filter(status='Pending', order_date__gte=seven_days_ago).count()
         
@@ -511,24 +737,32 @@ class OrderViewSet(viewsets.ModelViewSet):
         # Fetch completed orders from the last 6 months to group in Python
         # (Avoids TruncMonth which requires timezone tables in MySQL)
         six_months_ago = timezone.now() - timedelta(days=180)
-        recent_orders = Orders.objects.filter(status='Completed', order_date__gte=six_months_ago)
+        recent_orders = Orders.objects.filter(status__in=['Completed', 'Processing'], order_date__gte=six_months_ago)
         
-        # Initialize final_sales_chart with month names
+        # Initialize final_sales_chart with last 6 months properly
         final_sales_chart = []
         now = timezone.now()
         for i in range(5, -1, -1):
-            # Roughly calculate month start
-            month_date = (now.replace(day=1) - timedelta(days=i*31)).replace(day=1)
+            # Calculate month and year correctly
+            year = now.year
+            month = now.month - i
+            while month <= 0:
+                month += 12
+                year -= 1
+            
+            month_date = datetime.date(year, month, 1)
             final_sales_chart.append({
                 "month": month_date.strftime('%b'),
+                "year": year,
+                "month_int": month,
                 "amount": 0.0
             })
             
         # Group and sum in Python
         for order in recent_orders:
-            m_name = order.order_date.strftime('%b')
+            o_date = order.order_date
             for entry in final_sales_chart:
-                if entry["month"] == m_name:
+                if entry["month_int"] == o_date.month and entry["year"] == o_date.year:
                     entry["amount"] += float(order.total_amount)
                     break
 
@@ -657,10 +891,11 @@ class OrderViewSet(viewsets.ModelViewSet):
                     shipping_address=shipping_address,
                     shipping_method=shipping_method,
                     notes=notes,
-                    status='Pending'
+                    status='Pending',
+                    batch_id=batch_id # Save batch_id to clear later
                 )
 
-                # 4. Create Order Items & Deduct Stock
+                # 4. Create Order Items & Deduct Stock if not ABA (Cash/Manual)
                 for item_data in items_to_create:
                     OrderItems.objects.create(
                         order=order,
@@ -668,8 +903,10 @@ class OrderViewSet(viewsets.ModelViewSet):
                         quantity=item_data['quantity'],
                         price_at_purchase=item_data['price_at_purchase']
                     )
-                    # Update Stock
-                    if item_data['book'].stock_qty is not None:
+                    
+                    # Deduct stock immediately ONLY for non-ABA payments (like Cash)
+                    # For ABA, we deduct ONLY after payment success in callback.
+                    if payment_method != "ABA Bank" and item_data['book'].stock_qty is not None:
                         item_data['book'].stock_qty -= item_data['quantity']
                         item_data['book'].save()
 
@@ -800,6 +1037,78 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['post'], url_path='spin-wheel')
+    def spin_wheel(self, request):
+        """Handle the points deduction and determine a random win from the Lucky Wheel."""
+        from django.db import transaction
+        from django.db.models import F
+        from django.db.models.functions import Coalesce
+        import random
+        
+        user = request.user
+        cost = 10
+        
+        # Ensure reward_points is not NULL for calculations
+        if user.reward_points is None:
+            user.reward_points = 0
+            user.save(update_fields=['reward_points'])
+            
+        if user.reward_points < cost:
+            return Response({"error": "អ្នកត្រូវការយ៉ាងតិច ១០ ពិន្ទុ ដើម្បីបង្វិលកង់នាំសំណាង"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Define the rewards on the backend to prevent cheating
+        rewards_list = [
+            {"label": "៥ ពិន្ទុ", "win_points": 5},
+            {"label": "១០ ពិន្ទុ", "win_points": 10},
+            {"label": "២០ ពិន្ទុ", "win_points": 20},
+            {"label": "៣០ ពិន្ទុ", "win_points": 30},
+            {"label": "Coupon ១០០០០៛", "win_points": 0},
+            {"label": "សៀវភៅមួយក្បាល", "win_points": 0},
+        ]
+        
+        # Pick a random reward
+        winning_reward = random.choice(rewards_list)
+        reward_label = winning_reward["label"]
+        win_points = winning_reward["win_points"]
+        
+        try:
+            with transaction.atomic():
+                # Update points atomically: Deduct cost, add win_points. Use Coalesce to handle NULL just in case
+                net_change = win_points - cost
+                Users.objects.filter(id=user.id).update(
+                    reward_points=Coalesce(F('reward_points'), 0) + net_change
+                )
+                
+                # Refresh user instance
+                user.refresh_from_db()
+                
+                # Send Notification
+                title = "ការបង្វិលកង់នាំសំណាង"
+                if win_points > 0:
+                    message = f"អបអរសាទរ! អ្នកបានឈ្នះ {win_points} ពិន្ទុ បន្ទាប់ពីចំណាយ {cost} ពិន្ទុក្នុងការបង្វិល។"
+                else:
+                    message = f"អ្នកបានចំណាយ {cost} ពិន្ទុក្នុងការបង្វិលកង់នាំសំណាង និងទទួលបាន '{reward_label}'។"
+                
+                Notification.objects.create(
+                    user=user,
+                    title=title,
+                    message=message,
+                    type="success" if win_points > 0 else "info"
+                )
+                
+                return Response({
+                    "status": "success",
+                    "reward_label": reward_label,
+                    "reward_points": user.reward_points,
+                    "win_points": win_points,
+                    "cost": cost,
+                    "message": message
+                })
+        except Exception as e:
+            import traceback
+            print(traceback.format_exc())
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class RoleViewSet(viewsets.ModelViewSet):
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
@@ -836,6 +1145,200 @@ class LoginView(TokenObtainPairView):
     Takes credentials (email/password) and returns access and refresh tokens.
     """
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class GoogleLoginView(APIView):
+    """
+    Endpoint to verify Google ID token and return JWT tokens.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        token = request.data.get('id_token') or request.data.get('access_token')
+        if not token:
+            return Response({"error": "ID token or access token is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            email = None
+            full_name = ""
+
+            # Try to verify as ID Token first
+            try:
+                idinfo = id_token.verify_oauth2_token(token, google_requests.Request())
+                email = idinfo.get('email')
+                full_name = idinfo.get('name', '')
+            except Exception:
+                # Fallback: Try as Access Token by calling Google UserInfo API
+                import requests as py_requests
+                userinfo_response = py_requests.get(f"https://www.googleapis.com/oauth2/v3/userinfo?access_token={token}")
+                if userinfo_response.status_code == 200:
+                    idinfo = userinfo_response.json()
+                    email = idinfo.get('email')
+                    full_name = idinfo.get('name', '')
+                else:
+                    return Response({"error": "Invalid token. Could not verify as ID token or access token."}, status=status.HTTP_400_BAD_REQUEST)
+
+            if not email:
+                return Response({"error": "Email not found in Google account info"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            full_name = idinfo.get('name', '')
+            picture = idinfo.get('picture', '')
+
+            if not email:
+                return Response({"error": "Email not found in Google account info"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            # Find or create user
+            user, created = Users.objects.get_or_create(
+                email=email,
+                defaults={
+                    'full_name': full_name,
+                    'avatar_url': picture,
+                    'password': str(uuid.uuid4())
+                }
+            )
+            
+            # Update info if exists
+            if not created:
+                updated = False
+                # ធ្វើបច្ចុប្បន្នភាពឈ្មោះជានិច្ចឱ្យស្របតាម Google
+                if full_name and user.full_name != full_name:
+                    user.full_name = full_name
+                    updated = True
+                if picture and user.avatar_url != picture:
+                    user.avatar_url = picture
+                    updated = True
+                if updated:
+                    user.save()
+            
+            # If created, assign default role
+            if created:
+                # Find default 'User' role (same as RegisterSerializer)
+                role = Role.objects.filter(name__iexact='User').first()
+                if not role:
+                    role, _ = Role.objects.get_or_create(name='User', defaults={'name_km': 'អ្នកប្រើប្រាស់'})
+                user.role = role
+                user.save()
+
+            # Generate JWT tokens
+            refresh = RefreshToken.for_user(user)
+            
+            # Return same structure as standard login
+            user_data = UserSerializer(user).data
+            
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': user_data
+            })
+
+        except ValueError as e:
+            return Response({"error": f"Invalid ID token: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class FacebookLoginView(APIView):
+    """
+    Endpoint to verify Facebook access token and return JWT tokens.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        token = request.data.get('access_token')
+        if not token:
+            return Response({"error": "Access token is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Verify token with Facebook Graph API
+            import requests as py_requests
+            response = py_requests.get(
+                f"https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token={token}"
+            )
+            
+            if response.status_code != 200:
+                return Response({"error": "Invalid Facebook token"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            fb_data = response.json()
+            email = fb_data.get('email')
+            full_name = fb_data.get('name', '')
+            picture_data = fb_data.get('picture', {}).get('data', {})
+            picture = picture_data.get('url', '')
+
+            if not email:
+                # Some Facebook accounts don't have email or it's not shared
+                # Fallback to ID-based email or return error
+                return Response({"error": "Email not provided by Facebook. Please ensure your Facebook account has a verified email."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Find or create user
+            user, created = Users.objects.get_or_create(
+                email=email,
+                defaults={
+                    'full_name': full_name,
+                    'avatar_url': picture,
+                    'password': str(uuid.uuid4())
+                }
+            )
+            
+            # Sync info
+            updated = False
+            if full_name and user.full_name != full_name:
+                user.full_name = full_name
+                updated = True
+            if picture and user.avatar_url != picture:
+                user.avatar_url = picture
+                updated = True
+            if updated:
+                user.save()
+
+            if created:
+                role = Role.objects.filter(name__iexact='User').first()
+                if not role:
+                    role, _ = Role.objects.get_or_create(name='User', defaults={'name_km': 'អ្នកប្រើប្រាស់'})
+                user.role = role
+                user.save()
+
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': UserSerializer(user).data
+            })
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class UserProfileView(APIView):
+    """
+    Endpoint to retrieve or update the current user's profile.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        user = request.user
+        data = request.data
+        
+        # Update fields if provided
+        if 'full_name' in data:
+            user.full_name = data['full_name']
+        if 'phone' in data:
+            user.phone = data['phone']
+        if 'phone_number' in data: # Fallback if frontend sends phone_number
+            user.phone = data['phone_number']
+        
+        # Handle Profile Image Upload
+        if 'profile_image' in request.FILES:
+            user.avatar_url = request.FILES['profile_image']
+            
+        if 'avatar_url' in data and not request.FILES.get('profile_image'):
+            user.avatar_url = data['avatar_url']
+            
+        user.save()
+        return Response(UserSerializer(user).data)
 
 
 class LogoutView(APIView):
@@ -1008,13 +1511,29 @@ class PayWayCallbackView(drf_views.APIView):
         if tran_id and apaba_status == "0":
             try:
                 payment = Payments.objects.get(transaction_id=tran_id)
+                order = payment.order
+                
+                # 1. Deduct Stock for ABA payment now that it's successful
+                with transaction.atomic():
+                    # Check stock again before deducting
+                    for item in order.items.all():
+                        book = item.book
+                        if book.stock_qty is not None:
+                            # Note: In high traffic, we should handle if stock became 0 while waiting for payment
+                            # but here we follow the "deduct after paid" logic.
+                            book.stock_qty -= item.quantity
+                            book.save()
+                
                 payment.payment_status = 'Completed'
                 payment.payment_date = timezone.now()
                 payment.save()
 
-                order = payment.order
                 order.status = 'Processing'
                 order.save()
+                
+                # Clear cart items associated with this order's batch
+                if order.batch_id:
+                    AddToCart.objects.filter(user=order.user, batch_id=order.batch_id).delete()
                 
                 Notification.objects.create(
                     user=order.user,
@@ -1028,3 +1547,109 @@ class PayWayCallbackView(drf_views.APIView):
                 return Response({"error": "Transaction not found"}, status=status.HTTP_404_NOT_FOUND)
         
         return Response({"status": "Failed or Invalid"}, status=status.HTTP_400_BAD_REQUEST)
+
+class PayWayCheckStatusView(drf_views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        tran_id = request.query_params.get("tran_id")
+        if not tran_id:
+            return Response({"error": "tran_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            payment = Payments.objects.get(transaction_id=tran_id)
+            # If the user is an admin or the owner of the order
+            user_role = str(request.user.role or "").lower()
+            if user_role != 'admin' and payment.order.user != request.user:
+                return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+            return Response({
+                "status": 0 if payment.payment_status == 'Completed' else 1,
+                "payment_status": payment.payment_status,
+                "amount": payment.amount,
+                "tran_id": payment.transaction_id
+            })
+        except Payments.DoesNotExist:
+            return Response({"error": "Transaction not found"}, status=status.HTTP_404_NOT_FOUND)
+
+class FavoriteViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = FavoriteSerializer
+    resource_name = 'favorites'
+
+    def get_queryset(self):
+        # Requirement: Filter out out-of-stock books
+        return Favorite.objects.filter(
+            user=self.request.user,
+            book__stock_qty__gt=0,
+            book__is_active=1
+        ).order_by('-created_at')
+
+    @action(detail=False, methods=['post'])
+    def toggle(self, request):
+        book_id = request.data.get('book_id')
+        if not book_id:
+            return Response({"error": "book_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            book = Books.objects.get(id=book_id)
+            favorite = Favorite.objects.filter(user=request.user, book=book).first()
+            
+            if favorite:
+                favorite.delete()
+                return Response({"status": "removed", "is_favorite": False})
+            else:
+                if book.stock_qty is not None and book.stock_qty <= 0:
+                    return Response({"error": "សៀវភៅនេះអស់ពីស្តុកហើយ"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                Favorite.objects.create(user=request.user, book=book)
+                return Response({"status": "added", "is_favorite": True}, status=status.HTTP_201_CREATED)
+                
+        except Books.DoesNotExist:
+            return Response({"error": "រកមិនឃើញសៀវភៅ"}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['get'])
+    def check(self, request):
+        book_id = request.query_params.get('book_id')
+        if not book_id:
+            return Response({"error": "book_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        is_favorite = Favorite.objects.filter(user=request.user, book_id=book_id).exists()
+        return Response({"is_favorite": is_favorite})
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def track_site_visit(request):
+    """Increments the total visits for today."""
+    from django.utils import timezone
+    from .models import SiteStats
+    today = timezone.now().date()
+    stats, created = SiteStats.objects.get_or_create(date=today)
+    SiteStats.objects.filter(date=today).update(total_visits=F('total_visits') + 1)
+    return Response({"status": "success"})
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_analytics(request):
+    """Returns analytics for admin dashboard."""
+    # Check if user has admin role
+    user_role = str(request.user.role.name if request.user.role else "").lower()
+    if user_role != 'admin' and not request.user.is_staff:
+        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+        
+    from .models import SiteStats
+    total_site_visits = SiteStats.objects.aggregate(total=Sum('total_visits'))['total'] or 0
+    total_book_views = Books.objects.aggregate(total=Sum('views_count'))['total'] or 0
+    
+    # Get last 7 days of site visits
+    recent_visits = SiteStats.objects.all().order_by('-date')[:7]
+    visits_chart = [{"date": v.date.strftime('%Y-%m-%d'), "visits": v.total_visits} for v in reversed(recent_visits)]
+    
+    top_books = Books.objects.order_by('-views_count')[:10]
+    
+    return Response({
+        "total_site_visits": total_site_visits,
+        "total_book_views": total_book_views,
+        "visits_chart": visits_chart,
+        "top_books": BookSerializer(top_books, many=True).data
+    })

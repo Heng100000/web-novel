@@ -14,11 +14,10 @@ export class ApiError extends Error {
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     if (response.status === 401 && typeof window !== "undefined") {
-      // Clear auth data and redirect to login on 401 Unauthorized
+      // Clear auth data but don't force redirect here, let AuthGuard handle it
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("user");
-      window.location.href = "/login";
     }
     const errorData = await response.json().catch(() => ({}));
     throw new ApiError(errorData, response.status);
@@ -93,6 +92,23 @@ export const cartApi = {
     apiClient<any>(`/add-to-cart/${id}/`, {
       method: "DELETE",
     }),
+
+  clearCart: () =>
+    apiClient<any>("/add-to-cart/clear/", {
+      method: "POST",
+    }),
+};
+
+export const favoritesApi = {
+  getFavorites: () => apiClient<any[]>("/favorites/"),
+  list: () => apiClient<any>("/favorites/"),
+  toggle: (bookId: number) => 
+    apiClient<any>("/favorites/toggle/", {
+      method: "POST",
+      body: JSON.stringify({ book_id: bookId }),
+    }),
+  check: (bookId: number) =>
+    apiClient<any>(`/favorites/check/?book_id=${bookId}`),
 };
 
 export const orderApi = {

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "light" | "dark";
+type Theme = "light";
 
 interface ThemeContextType {
   theme: Theme;
@@ -13,39 +13,22 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("light");
-  const [mounted, setMounted] = useState(false);
+  const [theme] = useState<Theme>("light");
 
   useEffect(() => {
-    // 1. Initial Load: Check localStorage then System Preference
-    const savedTheme = localStorage.getItem("theme") as Theme | null;
-    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    
-    const initialTheme = savedTheme || systemTheme;
-    setTheme(initialTheme);
-    setMounted(true);
+    // Always ensure Light Mode
+    document.documentElement.classList.remove("dark");
+    localStorage.setItem("theme", "light");
   }, []);
 
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    localStorage.setItem("theme", newTheme);
-    
-    // Apply class to HTML
-    if (newTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
-
   const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
+    // No-op since we only have light mode now
   };
 
-  // Prevent hydration mismatch: render children only after mounted
-  // But wait, it's better to render with a default and then update, 
-  // or use a script in head (advanced). For this we'll use a simple useEffect.
-  
+  const setTheme = () => {
+    // No-op
+  };
+
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
       {children}

@@ -18,6 +18,7 @@ export function EventForm({ initialData, onSuccess, onCancel }: EventFormProps) 
   const [error, setError] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string>(initialData?.status || "Active");
   const [discountType, setDiscountType] = useState<"Percentage" | "Fixed Amount">(initialData?.discount_type || "Percentage");
+  const [eventType, setEventType] = useState<"Promotion" | "FlashSale">(initialData?.event_type || "Promotion");
 
   // Helper to format date for datetime-local input (requires YYYY-MM-DDThh:mm)
   const formatDateForInput = (dateStr: string) => {
@@ -65,6 +66,7 @@ export function EventForm({ initialData, onSuccess, onCancel }: EventFormProps) 
       discount_percentage: discountType === "Percentage" ? formData.get("discount_value") : 0, // Fallback for old code if needed
       start_date: startDate,
       end_date: endDate,
+      event_type: eventType,
       show_in_banner: formData.get("show_in_banner") === "on" ? 1 : 0,
       show_in_homepage: formData.get("show_in_homepage") === "on" ? 1 : 0,
       banner_url: formData.get("banner_url"),
@@ -96,13 +98,36 @@ export function EventForm({ initialData, onSuccess, onCancel }: EventFormProps) 
       )}
 
       <section className="rounded-3xl border border-border-dim bg-card-bg p-6 shadow-sm ring-1 ring-border-dim lg:p-8 transition-all">
-        <div className="mb-8 flex items-center gap-3 border-b border-border-dim/50 pb-5">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <IconEvents className="size-5" />
+        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border-dim/50 pb-5">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <IconEvents className="size-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-text-main font-battambang">{initialData ? "កែប្រែព្រឹត្តិការណ៍" : "គ្រប់គ្រងព្រឹត្តិការណ៍"}</h2>
+              <p className="text-xs font-medium text-text-dim font-battambang">កំណត់ព័ត៌មានលម្អិត និងកាលវិភាគផ្សព្វផ្សាយ</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-bold text-text-main font-battambang">{initialData ? "កែប្រែព្រឹត្តិការណ៍" : "គ្រប់គ្រងព្រឹត្តិការណ៍"}</h2>
-            <p className="text-xs font-medium text-text-dim font-battambang">កំណត់ព័ត៌មានលម្អិត និងកាលវិភាគផ្សព្វផ្សាយ</p>
+
+          {/* Event Type Selector */}
+          <div className="flex bg-bg-soft/50 p-1 rounded-xl border border-border-dim/30 w-fit">
+            <button
+              type="button"
+              onClick={() => setEventType("Promotion")}
+              className={`px-4 py-1.5 text-[12px] font-bold rounded-lg transition-all flex items-center gap-2 ${eventType === "Promotion" ? "bg-white text-primary shadow-sm border border-border-dim/50" : "text-text-dim hover:text-text-main"}`}
+            >
+              <div className={`size-1.5 rounded-full ${eventType === "Promotion" ? "bg-primary" : "bg-text-dim/30"}`} />
+              Promotion
+            </button>
+            <button
+              type="button"
+              onClick={() => setEventType("FlashSale")}
+              className={`px-4 py-1.5 text-[12px] font-bold rounded-lg transition-all flex items-center gap-2 ${eventType === "FlashSale" ? "bg-primary text-white shadow-md" : "text-text-dim hover:text-text-main"}`}
+            >
+              <div className={`size-1.5 rounded-full ${eventType === "FlashSale" ? "bg-white" : "bg-text-dim/30"}`} />
+              Flash Sale
+            </button>
+            <input type="hidden" name="event_type" value={eventType} />
           </div>
         </div>
 
@@ -113,8 +138,8 @@ export function EventForm({ initialData, onSuccess, onCancel }: EventFormProps) 
               ចំណងជើងព្រឹត្តិការណ៍ <span className="text-red-500">*</span>
             </label>
             <div className="relative group">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim/60 transition-colors group-focus-within:text-primary">
-                <IconEvents className="size-4.5" />
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim/40 transition-colors group-focus-within:text-primary pointer-events-none">
+                <IconEvents className="size-4" strokeWidth={1.8} />
               </div>
                 <input
                   name="title"
@@ -181,8 +206,8 @@ export function EventForm({ initialData, onSuccess, onCancel }: EventFormProps) 
                 </div>
               </label>
               <div className="relative group">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim/60 transition-colors group-focus-within:text-primary">
-                  <IconHash className="size-4.5" />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim/40 transition-colors group-focus-within:text-primary pointer-events-none">
+                  <IconHash className="size-4" strokeWidth={1.8} />
                 </div>
                 <input
                   name="discount_value"
@@ -201,8 +226,8 @@ export function EventForm({ initialData, onSuccess, onCancel }: EventFormProps) 
                 តំណភ្ជាប់បដា (Banner URL)
               </label>
               <div className="relative group">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim/60 transition-colors group-focus-within:text-primary">
-                  <IconGlobe className="size-4.5" />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-dim/40 transition-colors group-focus-within:text-primary pointer-events-none">
+                  <IconGlobe className="size-4" strokeWidth={1.8} />
                 </div>
                 <input
                   name="banner_url"
