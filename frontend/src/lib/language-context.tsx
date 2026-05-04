@@ -123,7 +123,6 @@ const translations: Record<Language, Record<string, string>> = {
     personal_info: "ព័ត៌មានផ្ទាល់ខ្លួន",
     order_history: "ប្រវត្តិការបញ្ជាទិញ",
     favorite_books: "សៀវភៅដែលចូលចិត្ត",
-    cart: "កន្ត្រក",
     reward_points_title: "ពិន្ទុសន្សំ",
     edit_info: "កែសម្រួលព័ត៌មាន",
     edit: "កែប្រែ",
@@ -153,7 +152,6 @@ const translations: Record<Language, Record<string, string>> = {
     joined_since: "តាំងពី",
     total_amount: "ទឹកប្រាក់សរុប",
     items_count: "មុខទំនិញ",
-    see_more: "មើលបន្ថែម",
     view_details: "មើលលម្អិត",
 
     // Hero Section
@@ -355,7 +353,6 @@ const translations: Record<Language, Record<string, string>> = {
     personal_info: "Personal Information",
     order_history: "Order History",
     favorite_books: "Favorite Books",
-    cart: "Cart",
     reward_points_title: "Reward Points",
     edit_info: "Edit Information",
     edit: "Edit",
@@ -385,7 +382,6 @@ const translations: Record<Language, Record<string, string>> = {
     joined_since: "Since",
     total_amount: "Total Amount",
     items_count: "Items",
-    see_more: "See More",
     view_details: "View Details",
 
     // Hero Section

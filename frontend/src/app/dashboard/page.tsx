@@ -34,6 +34,10 @@ interface AdminStats {
   unpaid_growth: number;
   invoice_chart: { name: string; value: number; color: string }[];
   sales_chart: { month: string; amount: number }[];
+  total_site_visits?: number;
+  total_book_views?: number;
+  visits_chart?: { date: string; visits: number }[];
+  top_books?: any[];
 }
 
 function StatCard({
@@ -254,13 +258,13 @@ export default function DashboardPage() {
                         data = [{ date: 'Start', visits: 0 }, ...data];
                       }
                       
-                      const maxVisits = Math.max(...data.map(v => v.visits), 10);
+                      const maxVisits = Math.max(...data.map((v: any) => v.visits), 10);
                       const width = 1000;
                       const height = 400;
                       const padding = 40; // Top/bottom padding
                       const effectiveHeight = height - (padding * 2);
                       
-                      const points = data.map((v, i) => ({
+                      const points = data.map((v: any, i: number) => ({
                          x: (i / (data.length - 1)) * width,
                          y: padding + (effectiveHeight - (v.visits / maxVisits) * effectiveHeight)
                       }));
@@ -295,9 +299,9 @@ export default function DashboardPage() {
 
                 {/* Interaction Points Overlay */}
                 <div className="absolute inset-0 flex justify-between px-0">
-                   {stats?.visits_chart?.map((item, idx) => {
+                   {stats?.visits_chart?.map((item: any, idx: number) => {
                       const dataLength = stats?.visits_chart?.length || 1;
-                      const maxVisits = Math.max(...(stats?.visits_chart?.map(v => v.visits) || [10]), 10);
+                      const maxVisits = Math.max(...(stats?.visits_chart?.map((v: any) => v.visits) || [10]), 10);
                       const padding = 40;
                       const height = 400;
                       const effectiveHeight = height - (padding * 2);
@@ -359,7 +363,7 @@ export default function DashboardPage() {
              </div>
 
              <div className="flex flex-col gap-5 flex-1">
-                {stats?.top_books?.slice(0, 5).map((book, idx) => (
+                {stats?.top_books?.slice(0, 5).map((book: any, idx: number) => (
                    <div key={book.id} className="flex items-center gap-4 group p-2 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-all">
                       <div className="relative size-14 flex-shrink-0 rounded-xl overflow-hidden ring-1 ring-black/5 shadow-md group-hover:scale-105 transition-transform duration-500">
                          <img src={book.image_url} alt={book.title} className="size-full object-cover" />

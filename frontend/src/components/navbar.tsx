@@ -13,7 +13,7 @@ import {
   Search as SearchIcon,
   Heart,
   ShoppingBag,
-  User,
+  User as UserIcon,
   LogOut,
   ChevronDown,
   Menu,
@@ -273,7 +273,7 @@ export default function Navbar() {
                             priority
                           />
                         ) : (
-                          <User className="size-6 text-text-main" />
+                          <UserIcon className="size-6 text-text-main" />
                         )}
                       </button>
 
@@ -298,11 +298,11 @@ export default function Navbar() {
                               href="/profile"
                               className="flex items-center justify-center gap-3 w-full py-3 rounded-lg bg-primary text-white hover:opacity-90 transition-all shadow-lg shadow-primary/20"
                             >
-                              <User className="size-5" />
+                              <UserIcon className="size-5" />
                               <span className="text-[14px] font-bold font-kantumruy">{t("profile")}</span>
                             </Link>
 
-                            {user.role?.name === "Admin" && (
+                            {user.role_details?.name === "Admin" && (
                               <Link
                                 href="/dashboard"
                                 className="flex items-center justify-center gap-3 w-full py-3 rounded-lg bg-text-main text-app-bg hover:opacity-90 transition-all shadow-lg"
@@ -327,7 +327,7 @@ export default function Navbar() {
                       href="/login"
                       className="flex items-center justify-center size-10 rounded-lg border border-border-dim bg-card-bg hover:border-primary transition-all shadow-sm"
                     >
-                      <User className="size-6 text-text-main" />
+                      <UserIcon className="size-6 text-text-main" />
                     </Link>
                   )}
                 </div>

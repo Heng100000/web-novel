@@ -10,7 +10,7 @@ import Navbar from "@/components/navbar";
 import BottomNav from "@/components/bottom-nav";
 import Footer from "@/components/footer";
 import {
-  User,
+  User as UserIcon,
   Mail,
   Phone,
   Camera,
@@ -91,8 +91,8 @@ export default function ProfileClient() {
           ]);
 
           // Handle both array and paginated results for favorites & orders
-          const favList = Array.isArray(favData) ? favData : (favData.results || []);
-          const ordList = Array.isArray(ords) ? ords : (ords.results || []);
+          const favList = Array.isArray(favData) ? favData : ((favData as any).results || []);
+          const ordList = Array.isArray(ords) ? ords : ((ords as any).results || []);
           
           setFavorites(favList);
           setOrders(ordList);
@@ -112,7 +112,7 @@ export default function ProfileClient() {
     if (activeTab === 'favorites' && user) {
       setIsFavoritesLoading(true);
       favoritesApi.list()
-        .then(data => {
+        .then((data: any) => {
           const list = Array.isArray(data) ? data : (data.results || []);
           setFavorites(list);
         })
@@ -122,7 +122,7 @@ export default function ProfileClient() {
     if (activeTab === 'orders' && user) {
       setIsOrdersLoading(true);
       orderApi.getOrders()
-        .then(data => {
+        .then((data: any) => {
           const list = Array.isArray(data) ? data : (data.results || []);
           setOrders(list);
         })
@@ -263,7 +263,7 @@ export default function ProfileClient() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-zinc-50 text-zinc-300">
-                          <User className="size-16" />
+                          <UserIcon className="size-16" />
                         </div>
                       )}
                     </div>
@@ -327,7 +327,7 @@ export default function ProfileClient() {
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <User className={`size-5 ${activeTab === 'info' ? 'text-[#3b6016]' : 'text-zinc-400'}`} />
+                      <UserIcon className={`size-5 ${activeTab === 'info' ? 'text-[#3b6016]' : 'text-zinc-400'}`} />
                       <span className="text-sm">{t("personal_info")}</span>
                     </div>
                     <ChevronRight className={`size-4 ${activeTab === 'info' ? 'opacity-50' : 'opacity-30'}`} />
@@ -449,7 +449,7 @@ export default function ProfileClient() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                           <label className="text-[13px] font-bold text-zinc-700 flex items-center gap-2 font-hanuman">
-                            <User className="size-3.5 text-zinc-400" />
+                            <UserIcon className="size-3.5 text-zinc-400" />
                             {t("full_name")}
                           </label>
                           <input

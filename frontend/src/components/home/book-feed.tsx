@@ -12,6 +12,7 @@ interface BookFeedProps {
   onSortChange: (sort: string) => void;
   mobileCols: 1 | 2 | 3;
   favoriteIds?: Set<number>;
+  hideSearch?: boolean;
 }
 
 export default function BookFeed({
@@ -22,7 +23,8 @@ export default function BookFeed({
   sortBy,
   onSortChange,
   mobileCols,
-  favoriteIds = new Set<number>()
+  favoriteIds = new Set<number>(),
+  hideSearch = false
 }: BookFeedProps) {
   const getGridTemplate = (cols: number) => {
     if (cols === 3) return '1fr 1fr 1fr';

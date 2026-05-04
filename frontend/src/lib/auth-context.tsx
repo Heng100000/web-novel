@@ -25,10 +25,12 @@ interface User {
   phone?: string;
   address?: string;
   profile_image?: string;
+  avatar_url?: string;
   reward_points: number;
   role: number | null;
   role_details: RoleDetails | null;
   permissions: Permission[];
+  created_at?: string;
 }
 
 interface AuthContextType {
