@@ -27,6 +27,7 @@ export default function BottomNav() {
     { name: t("search"), href: "#", icon: <Search className="size-[22px]" />, isSearch: true },
     { name: t("profile"), href: "/profile", icon: <User className="size-[22px]" /> },
   ];
+  if (["/login", "/register", "/checkout"].includes(pathname)) return null;
 
   return (
     <>
