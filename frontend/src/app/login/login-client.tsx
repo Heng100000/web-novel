@@ -50,7 +50,8 @@ export default function LoginClient() {
       console.log("Google Login Success:", tokenResponse);
       try {
         // បញ្ជូន access_token ទៅកាន់ backend
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/auth/google/`, {
+        const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api').replace(/\/$/, '');
+        const response = await fetch(`${baseUrl}/auth/google/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -98,7 +99,8 @@ export default function LoginClient() {
   const processFacebookLogin = async (accessToken: string) => {
     setIsFBLoggingIn(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/auth/facebook/`, {
+      const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api').replace(/\/$/, '');
+      const response = await fetch(`${baseUrl}/auth/facebook/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
