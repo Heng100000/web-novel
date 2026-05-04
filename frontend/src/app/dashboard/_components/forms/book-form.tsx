@@ -42,6 +42,8 @@ interface BookFormProps {
     edition_type?: string;
     event_id?: number;
     images: { id: number; image_url: string; is_main: number }[];
+    flash_sale_qty?: number | string;
+    items_sold?: number | string;
   };
   onSuccess: () => void;
   onCancel: () => void;
