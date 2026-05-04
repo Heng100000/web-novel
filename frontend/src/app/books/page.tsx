@@ -295,7 +295,7 @@ export default function BooksPage() {
                           <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter">{t("min_price_label")}</span>
                           <div className="flex flex-col items-end">
                             <span className="text-xs font-black text-[#3b6016]">${minPrice || 0}</span>
-                            <span className="text-[9px] font-bold text-zinc-400">{(minPrice || 0) * 4000} {t("riel_unit") || "៛"}</span>
+                            <span className="text-[9px] font-bold text-zinc-400">{Number(minPrice || 0) * 4000} {t("riel_unit") || "៛"}</span>
                           </div>
                         </div>
                         <input
@@ -315,7 +315,7 @@ export default function BooksPage() {
                           <span className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter">{t("max_price_label")}</span>
                           <div className="flex flex-col items-end">
                             <span className="text-xs font-black text-[#3b6016]">${maxPrice || 100}</span>
-                            <span className="text-[9px] font-bold text-zinc-400">{(maxPrice || 100) * 4000} {t("riel_unit") || "៛"}</span>
+                            <span className="text-[9px] font-bold text-zinc-400">{Number(maxPrice || 100) * 4000} {t("riel_unit") || "៛"}</span>
                           </div>
                         </div>
                         <input
