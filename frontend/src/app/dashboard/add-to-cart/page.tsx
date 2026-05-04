@@ -15,6 +15,7 @@ import { formatImageUrl } from "@/lib/utils";
 interface CartEntry {
   id: number;
   user: number;
+  book: number;
   user_details?: {
     full_name: string;
     email: string;
