@@ -89,7 +89,7 @@ export default function BooksPage() {
           try {
             const favs = await favoritesApi.list();
             const favItems = Array.isArray(favs) ? favs : (favs.results || []);
-            const ids = new Set(favItems.map((f: any) => f.book));
+            const ids = new Set<number>(favItems.map((f: any) => Number(f.book)));
             setFavoriteIds(ids);
           } catch (e) {
             console.error("Error fetching favorites:", e);

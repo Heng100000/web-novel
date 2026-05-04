@@ -22,7 +22,7 @@ export default function BookFeed({
   sortBy,
   onSortChange,
   mobileCols,
-  favoriteIds = new Set()
+  favoriteIds = new Set<number>()
 }: BookFeedProps) {
   const getGridTemplate = (cols: number) => {
     if (cols === 3) return '1fr 1fr 1fr';

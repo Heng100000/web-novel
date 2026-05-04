@@ -129,8 +129,8 @@ class Events(models.Model):
         return self.title
 
 class EventBooks(models.Model):
-    event = models.ForeignKey(Events, on_delete=models.CASCADE, related_name='event_books')
-    book = models.ForeignKey(Books, on_delete=models.CASCADE, related_name='event_books')
+    event = models.ForeignKey(Events, on_delete=models.CASCADE, related_name='event_books', null=True, blank=True)
+    book = models.ForeignKey(Books, on_delete=models.CASCADE, related_name='event_books', null=True, blank=True)
     flash_sale_qty = models.IntegerField(default=0) # Total quantity assigned for this flash sale
     items_sold = models.IntegerField(default=0) # Real-time sold counter
 
