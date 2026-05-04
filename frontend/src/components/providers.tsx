@@ -20,14 +20,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
-    return (
-      <div className="flex flex-col min-h-screen">
-        {children}
-      </div>
-    );
-  }
-
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
       <LanguageProvider>
@@ -38,10 +30,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 <PageWrapper>
                   {children}
                 </PageWrapper>
-                <Toaster position="top-right" richColors />
-                <SpinWheelButton />
-                <ChatButton />
-                <BottomNav />
+                {mounted && (
+                  <>
+                    <Toaster position="top-right" richColors />
+                    <SpinWheelButton />
+                    <ChatButton />
+                    <BottomNav />
+                  </>
+                )}
               </CartProvider>
             </FavoritesProvider>
           </AuthProvider>
