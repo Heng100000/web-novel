@@ -1,10 +1,17 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function HomeBanner() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <section className="relative w-full py-1 overflow-hidden bg-white">
       <div className="relative overflow-hidden rounded-2xl bg-[#3b6016] min-h-[120px] md:min-h-[220px] shadow-2xl shadow-zinc-200/50 flex items-center">
@@ -13,7 +20,7 @@ export default function HomeBanner() {
           
           {/* Stars Background Layer */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(20)].map((_, i) => (
+            {mounted && [...Array(20)].map((_, i) => (
               <motion.div
                 key={`star-${i}`}
                 initial={{ opacity: 0 }}
